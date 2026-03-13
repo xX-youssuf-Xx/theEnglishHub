@@ -1,0 +1,922 @@
+{
+  "info": {
+    "_postman_id": "learning-center-api",
+    "name": "Learning Center Management System API",
+    "description": "tRPC API endpoints for Learning Center Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/auth.login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "auth.login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/auth.me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "auth.me"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"currentPassword\": \"admin123\",\n    \"newPassword\": \"newpassword123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/auth.changePassword",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "auth.changePassword"]
+            }
+          }
+        },
+        {
+          "name": "Create User (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"username\": \"newuser\",\n    \"password\": \"password123\",\n    \"role\": \"assistant\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/auth.createUser",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "auth.createUser"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "Get All Students",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/students.getAll",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "students.getAll"]
+            }
+          }
+        },
+        {
+          "name": "Get Student by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/students.getById?input=\"{{student_id}}\"",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "students.getById"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "\"{{student_id}}\""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"fullName\": \"John Doe\",\n    \"age\": 10,\n    \"parentName\": \"Jane Doe\",\n    \"parentPhone\": \"+20123456789\",\n    \"address\": \"123 Main St, Cairo\",\n    \"emergencyContact\": \"+20987654321\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/students.create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "students.create"]
+            }
+          }
+        },
+        {
+          "name": "Update Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"id\": \"{{student_id}}\",\n    \"data\": {\n      \"fullName\": \"John Doe Updated\",\n      \"parentPhone\": \"+20111111111\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/students.update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "students.update"]
+            }
+          }
+        },
+        {
+          "name": "Delete Student (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": \"{{student_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/students.delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "students.delete"]
+            }
+          }
+        },
+        {
+          "name": "Enroll in Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"studentId\": \"{{student_id}}\",\n    \"courseId\": \"{{course_id}}\",\n    \"levelId\": \"{{level_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/students.enrollInCourse",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "students.enrollInCourse"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teachers",
+      "item": [
+        {
+          "name": "Get All Teachers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/teachers.getAll",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "teachers.getAll"]
+            }
+          }
+        },
+        {
+          "name": "Get Teacher by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/teachers.getById?input=\"{{teacher_id}}\"",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "teachers.getById"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "\"{{teacher_id}}\""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"fullName\": \"Teacher Name\",\n    \"phone\": \"+20123456789\",\n    \"email\": \"teacher@example.com\",\n    \"address\": \"456 Teacher St\",\n    \"classAssignments\": []\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/teachers.create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "teachers.create"]
+            }
+          }
+        },
+        {
+          "name": "Update Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"id\": \"{{teacher_id}}\",\n    \"data\": {\n      \"fullName\": \"Updated Name\",\n      \"phone\": \"+20111111111\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/teachers.update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "teachers.update"]
+            }
+          }
+        },
+        {
+          "name": "Assign to Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"teacherId\": \"{{teacher_id}}\",\n    \"classId\": \"{{class_id}}\",\n    \"paymentAmount\": 500,\n    \"paymentCycle\": \"8\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/teachers.assignToClass",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "teachers.assignToClass"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/courses.getAll",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "courses.getAll"]
+            }
+          }
+        },
+        {
+          "name": "Get Course by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/courses.getById?input=\"{{course_id}}\"",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "courses.getById"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "\"{{course_id}}\""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"name\": \"English Course\",\n    \"description\": \"Comprehensive English course\",\n    \"syllabus\": \"Grammar, Vocabulary, Speaking\",\n    \"levels\": [\n      {\n        \"levelNumber\": 1,\n        \"durationMonths\": 4,\n        \"description\": \"Beginner level\",\n        \"books\": [\n          {\n            \"name\": \"English Book 1\",\n            \"price\": 150\n          }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/courses.create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "courses.create"]
+            }
+          }
+        },
+        {
+          "name": "Add Level",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"courseId\": \"{{course_id}}\",\n    \"levelNumber\": 2,\n    \"durationMonths\": 4,\n    \"description\": \"Intermediate level\",\n    \"books\": [\n      {\n        \"name\": \"English Book 2\",\n        \"price\": 200\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/courses.addLevel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "courses.addLevel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Classes",
+      "item": [
+        {
+          "name": "Get All Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/classes.getAll",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "classes.getAll"]
+            }
+          }
+        },
+        {
+          "name": "Get Class by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/classes.getById?input=\"{{class_id}}\"",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "classes.getById"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "\"{{class_id}}\""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"name\": \"Class A - Morning\",\n    \"scheduleDayOfWeek\": 1,\n    \"scheduleStartTime\": \"09:00\",\n    \"scheduleEndTime\": \"11:00\",\n    \"teacherPayment\": {\n      \"paymentAmount\": 500,\n      \"paymentCycle\": \"8\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/classes.create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "classes.create"]
+            }
+          }
+        },
+        {
+          "name": "Enroll Students",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"classId\": \"{{class_id}}\",\n    \"studentIds\": [\"{{student_id}}\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/classes.enrollStudents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "classes.enrollStudents"]
+            }
+          }
+        },
+        {
+          "name": "Create Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"classId\": \"{{class_id}}\",\n    \"sessionDate\": \"2025-03-15\",\n    \"startTime\": \"09:00\",\n    \"endTime\": \"11:00\",\n    \"notes\": \"Regular session\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/classes.createSession",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "classes.createSession"]
+            }
+          }
+        },
+        {
+          "name": "Mark Session Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"sessionId\": \"{{session_id}}\",\n    \"completed\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/classes.markSessionComplete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "classes.markSessionComplete"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Get Student Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/payments.getStudentPayments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "payments.getStudentPayments"]
+            }
+          }
+        },
+        {
+          "name": "Record Student Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"studentId\": \"{{student_id}}\",\n    \"type\": \"tuition\",\n    \"amount\": 800,\n    \"sessionsCovered\": 8,\n    \"paymentDate\": \"2025-03-15\",\n    \"notes\": \"Monthly tuition\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/payments.recordStudentPayment",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "payments.recordStudentPayment"]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/payments.getPendingStudentPayments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "payments.getPendingStudentPayments"]
+            }
+          }
+        },
+        {
+          "name": "Get Teacher Payments (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/payments.getTeacherPayments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "payments.getTeacherPayments"]
+            }
+          }
+        },
+        {
+          "name": "Record Teacher Payment (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"teacherId\": \"{{teacher_id}}\",\n    \"classId\": \"{{class_id}}\",\n    \"amount\": 500,\n    \"sessionsCovered\": 8,\n    \"notes\": \"Payment for 8 sessions\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/payments.recordTeacherPayment",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "payments.recordTeacherPayment"]
+            }
+          }
+        },
+        {
+          "name": "Get Expenses (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/payments.getExpenses",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "payments.getExpenses"]
+            }
+          }
+        },
+        {
+          "name": "Record Expense (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"json\": {\n    \"category\": \"Office Supplies\",\n    \"amount\": 150,\n    \"description\": \"Stationery and printing\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/payments.recordExpense",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "payments.recordExpense"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/reports.getDashboardStats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "reports.getDashboardStats"]
+            }
+          }
+        },
+        {
+          "name": "Get Financial Report (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/reports.getFinancialReport?input={\"startDate\":\"2025-01-01\",\"endDate\":\"2025-12-31\"}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "reports.getFinancialReport"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"startDate\":\"2025-01-01\",\"endDate\":\"2025-12-31\"}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Student Payment Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/reports.getStudentPaymentReport",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "reports.getStudentPaymentReport"]
+            }
+          }
+        },
+        {
+          "name": "Get Teacher Payment Schedule (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/reports.getTeacherPaymentSchedule",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "reports.getTeacherPaymentSchedule"]
+            }
+          }
+        },
+        {
+          "name": "Get Enrollment Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/reports.getEnrollmentReport",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "reports.getEnrollmentReport"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "student_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "teacher_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "course_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "class_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "level_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

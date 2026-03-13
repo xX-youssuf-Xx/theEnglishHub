@@ -1,0 +1,402 @@
+import { db } from '../db';
+import { courses, courseLevels, books, levelPrerequisites, studentEnrollments, classes, classSchedules, coursePrerequisites, teachers } from '../db/schema';
+import { eq, like, desc, count } from 'drizzle-orm';
+import { logger } from '../utils/logger';
+
+export class CourseService {
+  async getAll() {
+    try {
+      const data = await db.query.courses.findMany({
+        where: eq(courses.isActive, true),
+        with: {
+          levels: {
+            with: {
+              books: true,
+            },
+            orderBy: courseLevels.levelNumber,
+          },
+          enrollments: {
+            where: eq(studentEnrollments.status, 'active'),
+          },
+        },
+        orderBy: desc(courses.createdAt),
+      });
+
+      return {
+        data: data.map(c => ({
+          id: c.publicId,
+          name: c.name,
+          description: c.description,
+          syllabus: c.syllabus,
+          sessionsPerMonth: c.sessionsPerMonth,
+          levelsCount: c.levels?.length || 0,
+          enrollmentCount: c.enrollments?.length || 0,
+          levels: c.levels?.map(l => ({
+            id: l.publicId,
+            levelNumber: l.levelNumber,
+            durationMonths: l.durationMonths,
+            pricePerMonth: l.pricePerMonth,
+            description: l.description,
+            books: l.books?.map(b => ({
+              id: b.publicId,
+              name: b.name,
+              price: b.price,
+            })),
+          })),
+          isActive: c.isActive,
+          createdAt: c.createdAt,
+        })),
+      };
+    } catch (error) {
+      logger.error('Get all courses error:', error);
+      throw error;
+    }
+  }
+
+  async getById(publicId: string) {
+    try {
+      const course = await db.query.courses.findFirst({
+        where: eq(courses.publicId, publicId),
+        with: {
+          levels: {
+            with: {
+              books: true,
+              prerequisites: {
+                with: {
+                  prerequisiteLevel: true,
+                },
+              },
+            },
+            orderBy: courseLevels.levelNumber,
+          },
+          enrollments: {
+            with: {
+              student: true,
+            },
+          },
+          prerequisites: {
+            with: {
+              prerequisiteCourse: true,
+            },
+          },
+          classes: {
+            where: eq(classes.isActive, true),
+          },
+        },
+      });
+
+      if (!course) {
+        throw new Error('Course not found');
+      }
+
+      return {
+        id: course.publicId,
+        name: course.name,
+        description: course.description,
+        syllabus: course.syllabus,
+        sessionsPerMonth: course.sessionsPerMonth,
+        levels: course.levels?.map(l => ({
+          id: l.publicId,
+          levelNumber: l.levelNumber,
+          durationMonths: l.durationMonths,
+          pricePerMonth: l.pricePerMonth,
+          description: l.description,
+          books: l.books?.map(b => ({
+            id: b.publicId,
+            name: b.name,
+            price: b.price,
+          })),
+          prerequisites: l.prerequisites?.map(p => ({
+            id: p.prerequisiteLevel.publicId,
+            levelNumber: p.prerequisiteLevel.levelNumber,
+          })),
+        })),
+        prerequisites: course.prerequisites?.map(p => ({
+          id: p.prerequisiteCourse.publicId,
+          name: p.prerequisiteCourse.name,
+        })) || [],
+        enrollmentCount: course.enrollments?.length || 0,
+        classesCount: course.classes?.length || 0,
+        isActive: course.isActive,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+      };
+    } catch (error) {
+      logger.error('Get course by id error:', error);
+      throw error;
+    }
+  }
+
+  async create(data: {
+    name: string;
+    description?: string;
+    syllabus?: string;
+    sessionsPerMonth?: number;
+  }) {
+    try {
+      const [course] = await db.insert(courses)
+        .values({
+          name: data.name,
+          description: data.description || null,
+          syllabus: data.syllabus || null,
+          sessionsPerMonth: data.sessionsPerMonth || 4,
+        })
+        .returning();
+
+      return {
+        id: course.publicId,
+        name: course.name,
+        message: 'Course created successfully',
+      };
+    } catch (error) {
+      logger.error('Create course error:', error);
+      throw error;
+    }
+  }
+
+  async update(publicId: string, data: Partial<{
+    name: string;
+    description: string;
+    syllabus: string;
+    sessionsPerMonth: number;
+  }>) {
+    try {
+      const course = await db.query.courses.findFirst({
+        where: eq(courses.publicId, publicId),
+      });
+
+      if (!course) {
+        throw new Error('Course not found');
+      }
+
+      const [updated] = await db.update(courses)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(courses.id, course.id))
+        .returning();
+
+      return {
+        id: updated.publicId,
+        name: updated.name,
+        message: 'Course updated successfully',
+      };
+    } catch (error) {
+      logger.error('Update course error:', error);
+      throw error;
+    }
+  }
+
+  async delete(publicId: string) {
+    try {
+      const course = await db.query.courses.findFirst({
+        where: eq(courses.publicId, publicId),
+      });
+
+      if (!course) {
+        throw new Error('Course not found');
+      }
+
+      await db.update(courses)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(courses.id, course.id));
+
+      return { message: 'Course deleted successfully' };
+    } catch (error) {
+      logger.error('Delete course error:', error);
+      throw error;
+    }
+  }
+
+  async addLevel(coursePublicId: string, data: {
+    levelNumber: number;
+    durationMonths?: number;
+    pricePerMonth?: number;
+    description?: string;
+    books?: { name: string; price: number }[];
+  }) {
+    try {
+      const course = await db.query.courses.findFirst({
+        where: eq(courses.publicId, coursePublicId),
+      });
+
+      if (!course) {
+        throw new Error('Course not found');
+      }
+
+      const [level] = await db.insert(courseLevels)
+        .values({
+          courseId: course.id,
+          levelNumber: data.levelNumber,
+          durationMonths: data.durationMonths || 4,
+          pricePerMonth: data.pricePerMonth?.toString() || '0',
+          description: data.description || null,
+        })
+        .returning();
+
+      if (data.books && data.books.length > 0) {
+        await db.insert(books).values(
+          data.books.map(b => ({
+            levelId: level.id,
+            name: b.name,
+            price: b.price.toString(),
+          }))
+        );
+      }
+
+      return {
+        id: level.publicId,
+        levelNumber: level.levelNumber,
+        message: 'Level added successfully',
+      };
+    } catch (error) {
+      logger.error('Add level error:', error);
+      throw error;
+    }
+  }
+
+  async setPrerequisites(levelPublicId: string, prerequisiteLevelPublicIds: string[]) {
+    try {
+      const level = await db.query.courseLevels.findFirst({
+        where: eq(courseLevels.publicId, levelPublicId),
+      });
+
+      if (!level) {
+        throw new Error('Level not found');
+      }
+
+      // Get prerequisite level IDs
+      const prerequisiteLevels = await db.query.courseLevels.findMany({
+        where: (levels, { inArray }) => inArray(levels.publicId, prerequisiteLevelPublicIds),
+      });
+
+      if (prerequisiteLevels.length !== prerequisiteLevelPublicIds.length) {
+        throw new Error('Some prerequisite levels not found');
+      }
+
+      // Delete existing prerequisites
+      await db.delete(levelPrerequisites)
+        .where(eq(levelPrerequisites.levelId, level.id));
+
+      // Insert new prerequisites
+      if (prerequisiteLevels.length > 0) {
+        await db.insert(levelPrerequisites).values(
+          prerequisiteLevels.map(pl => ({
+            courseId: level.courseId,
+            levelId: level.id,
+            prerequisiteLevelId: pl.id,
+          }))
+        );
+      }
+
+      return { message: 'Prerequisites updated successfully' };
+    } catch (error) {
+      logger.error('Set prerequisites error:', error);
+      throw error;
+    }
+  }
+
+  async setCoursePrerequisites(coursePublicId: string, prerequisiteCoursePublicIds: string[]) {
+    try {
+      const course = await db.query.courses.findFirst({
+        where: eq(courses.publicId, coursePublicId),
+      });
+
+      if (!course) {
+        throw new Error('Course not found');
+      }
+
+      // Get prerequisite course IDs
+      const prerequisiteCourses = await db.query.courses.findMany({
+        where: (c, { inArray }) => inArray(c.publicId, prerequisiteCoursePublicIds),
+      });
+
+      if (prerequisiteCourses.length !== prerequisiteCoursePublicIds.length) {
+        throw new Error('Some prerequisite courses not found');
+      }
+
+      // Delete existing prerequisites
+      await db.delete(coursePrerequisites)
+        .where(eq(coursePrerequisites.courseId, course.id));
+
+      // Insert new prerequisites
+      if (prerequisiteCourses.length > 0) {
+        await db.insert(coursePrerequisites).values(
+          prerequisiteCourses.map(pc => ({
+            courseId: course.id,
+            prerequisiteCourseId: pc.id,
+          }))
+        );
+      }
+
+      return { message: 'Course prerequisites updated successfully' };
+    } catch (error) {
+      logger.error('Set course prerequisites error:', error);
+      throw error;
+    }
+  }
+
+  async createClass(data: {
+    name: string;
+    courseId: number;
+    levelId: number;
+    teacherId?: number;
+    schedules?: { dayOfWeek: number; startTime: string; endTime: string }[];
+  }) {
+    try {
+      const [newClass] = await db.insert(classes)
+        .values({
+          name: data.name,
+          courseId: data.courseId,
+          levelId: data.levelId,
+          teacherId: data.teacherId || null,
+        })
+        .returning();
+
+      // Create schedules if provided
+      if (data.schedules && data.schedules.length > 0) {
+        await db.insert(classSchedules).values(
+          data.schedules.map(s => ({
+            classId: newClass.id,
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+          }))
+        );
+      }
+
+      return {
+        id: newClass.publicId,
+        name: newClass.name,
+        message: 'Class created successfully',
+      };
+    } catch (error) {
+      logger.error('Create class error:', error);
+      throw error;
+    }
+  }
+
+  async deleteClass(publicId: string) {
+    try {
+      const cls = await db.query.classes.findFirst({
+        where: eq(classes.publicId, publicId),
+      });
+
+      if (!cls) {
+        throw new Error('Class not found');
+      }
+
+      await db.update(classes)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(classes.id, cls.id));
+
+      return { message: 'Class deleted successfully' };
+    } catch (error) {
+      logger.error('Delete class error:', error);
+      throw error;
+    }
+  }
+}
+
+export const courseService = new CourseService();

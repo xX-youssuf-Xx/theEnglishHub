@@ -1,0 +1,63 @@
+FROM oven/bun:1-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lock* ./
+RUN bun install
+
+# Copy .env.production for build-time variables
+COPY .env.production .env.production
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN bun run build
+
+# Production stage - serve with lightweight server
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S bunjs && \
+    adduser -S bunjs -u 1001
+
+# Copy built artifacts from builder
+COPY --from=builder --chown=bunjs:bunjs /app/dist ./dist
+
+# Copy package files for server
+COPY --from=builder --chown=bunjs:bunjs /app/package.json ./
+
+# Create a simple server file
+RUN cat > server.ts << 'EOF'
+import { serve } from 'bun';
+
+serve({
+  port: 3090,
+  fetch(req) {
+    const url = new URL(req.url);
+    const filePath = url.pathname === '/' ? '/index.html' : url.pathname;
+    
+    try {
+      const file = Bun.file(`./dist${filePath}`);
+      return new Response(file);
+    } catch (error) {
+      // Fallback to index.html for client-side routing
+      return new Response(Bun.file('./dist/index.html'));
+    }
+  },
+});
+
+console.log('Server running on port 3090');
+EOF
+
+# Switch to non-root user
+USER bunjs
+
+# Expose port
+EXPOSE 3090
+
+# Start server
+CMD ["bun", "server.ts"]
