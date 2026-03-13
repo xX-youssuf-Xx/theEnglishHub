@@ -223,6 +223,44 @@ export const courseRouter = router({
       };
     }),
 
+  updateClass: adminProcedure
+    .input(z.object({
+      classId: z.string().uuid(),
+      name: z.string().min(3).optional(),
+      teacherId: z.string().uuid().optional(),
+      levelId: z.string().uuid().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { classId, teacherId, levelId, ...updateData } = input;
+      
+      let teacherIdNum: number | undefined;
+      if (teacherId) {
+        const teacher = await db.query.teachers.findFirst({
+          where: eq(teachers.publicId, teacherId),
+        });
+        if (teacher) {
+          teacherIdNum = teacher.id;
+        }
+      }
+
+      let levelIdNum: number | undefined;
+      if (levelId) {
+        const level = await db.query.courseLevels.findFirst({
+          where: eq(courseLevels.publicId, levelId),
+        });
+        if (level) {
+          levelIdNum = level.id;
+        }
+      }
+
+      return courseService.updateClass(classId, {
+        ...updateData,
+        teacherId: teacherIdNum,
+        levelId: levelIdNum,
+      });
+    }),
+
   createClass: adminProcedure
     .input(z.object({
       courseId: z.string().uuid(),

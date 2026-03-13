@@ -313,22 +313,25 @@ export class ReportService {
         lte(studentPayments.paymentDate, lastDayOfMonth)
       ));
 
-      // Pending payments count
-      const pendingPaymentsResult = await db.execute(sql`
-        SELECT COUNT(DISTINCT s.id) as count
-        FROM students s
-        LEFT JOIN sessions ses ON s.class_id = ses.class_id AND ses.completed = true
-        LEFT JOIN student_payments sp ON s.id = sp.student_id AND sp.status = 'paid'
-        WHERE s.is_active = true
-        GROUP BY s.id
-        HAVING COUNT(DISTINCT ses.id) - COALESCE(SUM(CASE WHEN sp.payment_type = 'tuition' THEN sp.sessions_covered ELSE 0 END), 0) >= 8
-      `);
+      // Pending payments count - count students with pending payment status
+      const pendingPaymentsResult = await db.select({ count: count() })
+        .from(students)
+        .where(
+          and(
+            eq(students.isActive, true),
+            sql`EXISTS (
+              SELECT 1 FROM student_payments sp 
+              WHERE sp.student_id = ${students.id} 
+              AND sp.status = 'pending'
+            )`
+          )
+        );
 
       return {
         totalActiveStudents: activeStudents[0]?.count || 0,
         totalActiveTeachers: activeTeachers[0]?.count || 0,
         monthlyIncome: parseFloat(monthlyIncome[0]?.total || '0'),
-        pendingPaymentsCount: pendingPaymentsResult.rowCount || 0,
+        pendingPaymentsCount: pendingPaymentsResult[0]?.count || 0,
       };
     } catch (error) {
       logger.error('Get dashboard stats error:', error);

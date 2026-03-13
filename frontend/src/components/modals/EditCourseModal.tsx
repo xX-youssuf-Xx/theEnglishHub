@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +33,7 @@ export function EditCourseModal({ courseId, courseName, open, onOpenChange }: Ed
   );
 
   // Update form when course data loads
-  useState(() => {
+  useEffect(() => {
     if (course) {
       setFormData({
         name: course.name || '',
@@ -42,7 +42,7 @@ export function EditCourseModal({ courseId, courseName, open, onOpenChange }: Ed
         sessionsPerMonth: String(course.sessionsPerMonth || 4),
       });
     }
-  });
+  }, [course]);
 
   const updateMutation = trpc.courses.update.useMutation({
     onSuccess: () => {

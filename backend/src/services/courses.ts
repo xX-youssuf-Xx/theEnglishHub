@@ -377,6 +377,46 @@ export class CourseService {
     }
   }
 
+  async updateClass(publicId: string, data: {
+    name?: string;
+    teacherId?: number;
+    levelId?: number;
+    isActive?: boolean;
+  }) {
+    try {
+      const cls = await db.query.classes.findFirst({
+        where: eq(classes.publicId, publicId),
+      });
+
+      if (!cls) {
+        throw new Error('Class not found');
+      }
+
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.teacherId !== undefined) updateData.teacherId = data.teacherId;
+      if (data.levelId !== undefined) updateData.levelId = data.levelId;
+      if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
+      const [updated] = await db.update(classes)
+        .set(updateData)
+        .where(eq(classes.id, cls.id))
+        .returning();
+
+      return {
+        id: updated.publicId,
+        name: updated.name,
+        message: 'Class updated successfully',
+      };
+    } catch (error) {
+      logger.error('Update class error:', error);
+      throw error;
+    }
+  }
+
   async deleteClass(publicId: string) {
     try {
       const cls = await db.query.classes.findFirst({
