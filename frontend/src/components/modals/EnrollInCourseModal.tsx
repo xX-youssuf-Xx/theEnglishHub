@@ -127,10 +127,22 @@ export function EnrollInCourseModal({
 		});
 	};
 
+	// Helper function to convert 24h time to 12h format
+	const formatTime12h = (timeStr: string) => {
+		if (!timeStr) return "";
+		const [hours, minutes] = timeStr.split(":").map(Number);
+		const period = hours >= 12 ? "م" : "ص";
+		const displayHours = hours % 12 || 12;
+		return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+	};
+
 	const formatSchedule = (schedules: any[]) => {
 		if (!schedules || schedules.length === 0) return "لا يوجد جدول";
 		return schedules
-			.map((s) => `${daysOfWeek[s.dayOfWeek]} ${s.startTime}-${s.endTime}`)
+			.map(
+				(s) =>
+					`${daysOfWeek[s.dayOfWeek]} ${formatTime12h(s.startTime)}-${formatTime12h(s.endTime)}`,
+			)
 			.join("، ");
 	};
 
@@ -218,23 +230,29 @@ export function EnrollInCourseModal({
 									}
 								/>
 							</SelectTrigger>
-							<SelectContent>
+							<SelectContent className="max-w-[400px]">
 								{availableClasses.map((cls) => (
 									<SelectItem key={cls.id} value={cls.id}>
-										<div className="flex flex-col items-start gap-1">
-											<span className="font-medium">{cls.name}</span>
-											{cls.teacher && (
-												<span className="text-xs text-text-muted flex items-center gap-1">
-													<Users className="w-3 h-3" />
-													{cls.teacher.fullName}
-												</span>
-											)}
-											{cls.schedules && cls.schedules.length > 0 && (
-												<span className="text-xs text-text-muted flex items-center gap-1">
-													<Clock className="w-3 h-3" />
-													{formatSchedule(cls.schedules)}
-												</span>
-											)}
+										<div className="flex flex-col items-start gap-0.5 py-1">
+											<span className="font-medium truncate">{cls.name}</span>
+											<div className="flex items-center gap-2 text-xs text-text-muted">
+												{cls.teacher && (
+													<span className="flex items-center gap-1 truncate">
+														<Users className="w-3 h-3 flex-shrink-0" />
+														<span className="truncate">
+															{cls.teacher.fullName}
+														</span>
+													</span>
+												)}
+												{cls.schedules && cls.schedules.length > 0 && (
+													<span className="flex items-center gap-1">
+														<Clock className="w-3 h-3 flex-shrink-0" />
+														<span className="truncate">
+															{formatSchedule(cls.schedules)}
+														</span>
+													</span>
+												)}
+											</div>
 										</div>
 									</SelectItem>
 								))}

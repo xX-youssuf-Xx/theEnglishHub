@@ -39,6 +39,15 @@ const daysOfWeek = [
 	"السبت",
 ];
 
+// Helper function to convert 24h time to 12h format
+const formatTime12h = (timeStr: string) => {
+	if (!timeStr) return "";
+	const [hours, minutes] = timeStr.split(":").map(Number);
+	const period = hours >= 12 ? "م" : "ص";
+	const displayHours = hours % 12 || 12;
+	return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
+
 export function ViewCourseClassesModal({
 	courseId,
 	courseName,
@@ -86,7 +95,7 @@ export function ViewCourseClassesModal({
 		return schedules
 			.map(
 				(s) =>
-					`${daysOfWeek[s.dayOfWeek]} ${s.startTime?.slice(0, 5)}-${s.endTime?.slice(0, 5)}`,
+					`${daysOfWeek[s.dayOfWeek]} ${formatTime12h(s.startTime)} - ${formatTime12h(s.endTime)}`,
 			)
 			.join("، ");
 	};

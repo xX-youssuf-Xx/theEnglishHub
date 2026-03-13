@@ -159,7 +159,7 @@ export const classTeacherPayments = pgTable('class_teacher_payments', {
   id: serial('id').primaryKey(),
   publicId: uuid('public_id').unique().notNull().defaultRandom(),
   classId: integer('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
-  teacherId: integer('teacher_id').notNull().references(() => teachers.id, { onDelete: 'cascade' }),
+  teacherId: integer('teacher_id').references(() => teachers.id, { onDelete: 'set null' }),
   paymentAmount: decimal('payment_amount', { precision: 10, scale: 2 }).notNull(),
   paymentCycle: teacherPaymentCycleEnum('payment_cycle').notNull().default('4'),
   isActive: boolean('is_active').notNull().default(true),

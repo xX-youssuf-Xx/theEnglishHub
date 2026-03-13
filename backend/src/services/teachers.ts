@@ -28,6 +28,7 @@ export class TeacherService {
           where: whereClause,
           with: {
             classPayments: {
+              where: eq(classTeacherPayments.isActive, true),
               with: {
                 class: true,
               },
@@ -77,6 +78,7 @@ export class TeacherService {
         where: eq(teachers.publicId, publicId),
         with: {
           classPayments: {
+            where: eq(classTeacherPayments.isActive, true),
             with: {
               class: {
                 with: {

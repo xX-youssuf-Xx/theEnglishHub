@@ -187,11 +187,6 @@ export const courseRouter = router({
               teacher: true,
               schedules: true,
               students: true,
-              teacherPayments: {
-                with: {
-                  teacher: true,
-                },
-              },
             },
           },
         },
@@ -209,9 +204,9 @@ export const courseRouter = router({
             id: cls.level.publicId,
             levelNumber: cls.level.levelNumber,
           },
-          teacher: cls.teacherPayments?.[0]?.teacher ? {
-            id: cls.teacherPayments[0].teacher.publicId,
-            fullName: cls.teacherPayments[0].teacher.fullName,
+          teacher: cls.teacher ? {
+            id: cls.teacher.publicId,
+            fullName: cls.teacher.fullName,
           } : null,
           schedules: cls.schedules?.filter(s => s.isActive).map(s => ({
             dayOfWeek: s.dayOfWeek,
