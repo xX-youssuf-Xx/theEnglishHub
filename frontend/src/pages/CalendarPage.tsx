@@ -45,7 +45,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 const daysOfWeek = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const hours = Array.from({ length: 14 }, (_, i) => i + 8);
@@ -484,7 +483,7 @@ export function CalendarPage() {
                     <CardTitle className="text-sm">قائمة الحضور</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[200px]">
+                    <div className="h-[200px] overflow-y-auto">
                       <div className="space-y-2">
                         {sessionDetails.attendance.map((attendance: any) => (
                           <div 
@@ -506,7 +505,7 @@ export function CalendarPage() {
                           </div>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </CardContent>
                 </Card>
               )}
