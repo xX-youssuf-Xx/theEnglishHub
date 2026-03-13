@@ -2,19 +2,27 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
-# Build arguments - these should be passed during build time
-# In Dokploy, set these in the Build Args section
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
-
-# Copy package files
+# Copy package files first
 COPY package.json bun.lock* ./
 RUN bun install
 
 # Copy source code
 COPY . .
 
-# Build the application with the API URL from build arg
+# Create .env.production from environment variable (set in Dokploy UI)
+# This reads the VITE_API_URL from Dokploy's environment tab
+RUN if [ -n "$VITE_API_URL" ]; then \
+    echo "VITE_API_URL=$VITE_API_URL" > .env.production; \
+    echo "Using VITE_API_URL from environment: $VITE_API_URL"; \
+    else \
+    echo "VITE_API_URL=https://englishhub.8bitsolutions.net/api/trpc" > .env.production; \
+    echo "Using default VITE_API_URL"; \
+    fi
+
+# Show what we're using
+RUN cat .env.production
+
+# Build the application
 RUN bun run build
 
 # Production stage - serve with lightweight server
