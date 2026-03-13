@@ -2,28 +2,37 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files first
+# Create .env file FIRST (before installing dependencies)
+# This ensures Vite picks up the environment variables during build
+ARG VITE_API_URL
+RUN if [ -n "$VITE_API_URL" ]; then \
+    echo "VITE_API_URL=$VITE_API_URL" > .env.production; \
+    echo "Created .env.production with: $VITE_API_URL"; \
+    else \
+    echo "VITE_API_URL=https://englishhub.8bitsolutions.net/api/trpc" > .env.production; \
+    echo "Created .env.production with default URL"; \
+    fi
+
+# Show the content
+RUN cat .env.production
+
+# Copy package files
 COPY package.json bun.lock* ./
 RUN bun install
 
 # Copy source code
 COPY . .
 
-# Create .env.production from environment variable (set in Dokploy UI)
-# This reads the VITE_API_URL from Dokploy's environment tab
-RUN if [ -n "$VITE_API_URL" ]; then \
-    echo "VITE_API_URL=$VITE_API_URL" > .env.production; \
-    echo "Using VITE_API_URL from environment: $VITE_API_URL"; \
-    else \
-    echo "VITE_API_URL=https://englishhub.8bitsolutions.net/api/trpc" > .env.production; \
-    echo "Using default VITE_API_URL"; \
-    fi
+# Show env file location and verify Vite can see it
+RUN ls -la .env.production
 
-# Show what we're using
-RUN cat .env.production
-
-# Build the application
+# Build the application in production mode
+# Explicitly set NODE_ENV to production
+ENV NODE_ENV=production
 RUN bun run build
+
+# Debug: Show what URL was baked into the build
+RUN grep -r "localhost:3001" dist/ || echo "No localhost references found"
 
 # Production stage - serve with lightweight server
 FROM oven/bun:1-alpine
