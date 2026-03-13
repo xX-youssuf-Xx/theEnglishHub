@@ -1,168 +1,381 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { trpc } from '@/lib/trpc';
-import { Users, Loader2 } from 'lucide-react';
+import { GraduationCap, Loader2, Plus, Users, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { trpc } from "@/lib/trpc";
 
 interface AddClassModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+	isOpen: boolean;
+	onClose: () => void;
+	courseId?: string;
+	courseName?: string;
 }
 
 const daysOfWeek = [
-  { value: '0', label: 'الأحد' },
-  { value: '1', label: 'الإثنين' },
-  { value: '2', label: 'الثلاثاء' },
-  { value: '3', label: 'الأربعاء' },
-  { value: '4', label: 'الخميس' },
-  { value: '5', label: 'الجمعة' },
-  { value: '6', label: 'السبت' },
+	{ value: "0", label: "الأحد" },
+	{ value: "1", label: "الإثنين" },
+	{ value: "2", label: "الثلاثاء" },
+	{ value: "3", label: "الأربعاء" },
+	{ value: "4", label: "الخميس" },
+	{ value: "5", label: "الجمعة" },
+	{ value: "6", label: "السبت" },
 ];
 
-export function AddClassModal({ isOpen, onClose }: AddClassModalProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    teacherId: '',
-    scheduleDayOfWeek: '',
-    scheduleStartTime: '',
-    scheduleEndTime: '',
-  });
+export function AddClassModal({
+	isOpen,
+	onClose,
+	courseId,
+	courseName,
+}: AddClassModalProps) {
+	const [formData, setFormData] = useState({
+		name: "",
+		teacherId: "",
+		levelId: "",
+		schedules: [{ dayOfWeek: "0", startTime: "", endTime: "" }],
+	});
+	const { toast } = useToast();
 
-  const utils = trpc.useContext();
+	const utils = trpc.useUtils();
 
-  const { data: teachersData } = trpc.teachers.getAll.useQuery({ page: 1, limit: 100 });
-  const teachers = teachersData?.data ?? [];
+	const { data: teachersData } = trpc.teachers.getAll.useQuery({
+		page: 1,
+		limit: 100,
+	});
+	const teachers = teachersData?.data ?? [];
 
-  const createMutation = trpc.classes.create.useMutation({
-    onSuccess: () => {
-      utils.classes.getAll.invalidate();
-      onClose();
-      setFormData({
-        name: '',
-        teacherId: '',
-        scheduleDayOfWeek: '',
-        scheduleStartTime: '',
-        scheduleEndTime: '',
-      });
-    },
-  });
+	const { data: levelsData } = trpc.courses.getLevels.useQuery(
+		{ courseId: courseId || "" },
+		{ enabled: !!courseId },
+	);
+	const levels = levelsData?.data ?? [];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate({
-      name: formData.name,
-      teacherId: formData.teacherId || undefined,
-      scheduleDayOfWeek: formData.scheduleDayOfWeek ? parseInt(formData.scheduleDayOfWeek) : undefined,
-      scheduleStartTime: formData.scheduleStartTime || undefined,
-      scheduleEndTime: formData.scheduleEndTime || undefined,
-    });
-  };
+	const createClassMutation = trpc.classes.create.useMutation({
+		onSuccess: () => {
+			utils.classes.getAll.invalidate();
+			toast({
+				title: "تم بنجاح",
+				description: "تم إضافة الكلاس بنجاح",
+			});
+			onClose();
+			resetForm();
+		},
+		onError: (err) => {
+			toast({
+				variant: "destructive",
+				title: "خطأ",
+				description: err.message || "حدث خطأ أثناء الإضافة",
+			});
+		},
+	});
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Users className="w-6 h-6 text-primary" />
-            إضافة كلاس جديد
-          </DialogTitle>
-        </DialogHeader>
+	const createCourseClassMutation = trpc.courses.createClass.useMutation({
+		onSuccess: () => {
+			if (courseId) {
+				utils.courses.getClasses.invalidate(courseId);
+			}
+			toast({
+				title: "تم بنجاح",
+				description: "تم إضافة الكلاس بنجاح",
+			});
+			onClose();
+			resetForm();
+		},
+		onError: (err) => {
+			toast({
+				variant: "destructive",
+				title: "خطأ",
+				description: err.message || "حدث خطأ أثناء الإضافة",
+			});
+		},
+	});
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">اسم الكلاس *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="مثال: كلاس الصف الأول"
-              required
-            />
-          </div>
+	const resetForm = () => {
+		setFormData({
+			name: "",
+			teacherId: "",
+			levelId: "",
+			schedules: [{ dayOfWeek: "0", startTime: "", endTime: "" }],
+		});
+	};
 
-          <div className="space-y-2">
-            <Label htmlFor="teacher">المعلم</Label>
-            <Select
-              value={formData.teacherId}
-              onValueChange={(value) => setFormData({ ...formData, teacherId: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="اختر المعلم" />
-              </SelectTrigger>
-              <SelectContent>
-                {teachers.map((teacher) => (
-                  <SelectItem key={teacher.id} value={teacher.id}>
-                    {teacher.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+	const handleAddSchedule = () => {
+		setFormData((prev) => ({
+			...prev,
+			schedules: [
+				...prev.schedules,
+				{ dayOfWeek: "0", startTime: "", endTime: "" },
+			],
+		}));
+	};
 
-          <div className="space-y-2">
-            <Label htmlFor="day">يوم الجدولة</Label>
-            <Select
-              value={formData.scheduleDayOfWeek}
-              onValueChange={(value) => setFormData({ ...formData, scheduleDayOfWeek: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="اختر اليوم" />
-              </SelectTrigger>
-              <SelectContent>
-                {daysOfWeek.map((day) => (
-                  <SelectItem key={day.value} value={day.value}>
-                    {day.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+	const handleRemoveSchedule = (index: number) => {
+		setFormData((prev) => ({
+			...prev,
+			schedules: prev.schedules.filter((_, i) => i !== index),
+		}));
+	};
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startTime">وقت البدء</Label>
-              <Input
-                id="startTime"
-                type="time"
-                value={formData.scheduleStartTime}
-                onChange={(e) => setFormData({ ...formData, scheduleStartTime: e.target.value })}
-              />
-            </div>
+	const handleScheduleChange = (
+		index: number,
+		field: string,
+		value: string,
+	) => {
+		setFormData((prev) => {
+			const newSchedules = [...prev.schedules];
+			newSchedules[index] = { ...newSchedules[index], [field]: value };
+			return { ...prev, schedules: newSchedules };
+		});
+	};
 
-            <div className="space-y-2">
-              <Label htmlFor="endTime">وقت الانتهاء</Label>
-              <Input
-                id="endTime"
-                type="time"
-                value={formData.scheduleEndTime}
-                onChange={(e) => setFormData({ ...formData, scheduleEndTime: e.target.value })}
-              />
-            </div>
-          </div>
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              إلغاء
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={createMutation.isPending}
-            >
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  جاري الحفظ...
-                </>
-              ) : (
-                'حفظ'
-              )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+		if (!formData.name) {
+			toast({
+				variant: "destructive",
+				title: "خطأ في التحقق",
+				description: "اسم الكلاس مطلوب",
+			});
+			return;
+		}
+
+		if (courseId) {
+			// Creating class within a course context
+			if (!formData.levelId) {
+				toast({
+					variant: "destructive",
+					title: "خطأ في التحقق",
+					description: "المستوى مطلوب",
+				});
+				return;
+			}
+
+			const validSchedules = formData.schedules.filter(
+				(s) => s.startTime && s.endTime,
+			);
+			if (validSchedules.length === 0) {
+				toast({
+					variant: "destructive",
+					title: "خطأ في التحقق",
+					description: "يجب إضافة جدول زمني واحد على الأقل",
+				});
+				return;
+			}
+
+			createCourseClassMutation.mutate({
+				courseId,
+				name: formData.name,
+				levelId: formData.levelId,
+				teacherId: formData.teacherId || undefined,
+				schedules: validSchedules.map((s) => ({
+					dayOfWeek: parseInt(s.dayOfWeek),
+					startTime: s.startTime,
+					endTime: s.endTime,
+				})),
+			});
+		} else {
+			// Creating generic class (no course context)
+			createClassMutation.mutate({
+				name: formData.name,
+				teacherId: formData.teacherId || undefined,
+				scheduleDayOfWeek: formData.schedules[0]?.dayOfWeek
+					? parseInt(formData.schedules[0].dayOfWeek)
+					: undefined,
+				scheduleStartTime: formData.schedules[0]?.startTime || undefined,
+				scheduleEndTime: formData.schedules[0]?.endTime || undefined,
+			});
+		}
+	};
+
+	const isPending =
+		createClassMutation.isPending || createCourseClassMutation.isPending;
+
+	return (
+		<Dialog open={isOpen} onOpenChange={onClose}>
+			<DialogContent
+				className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto"
+				dir="rtl"
+			>
+				<DialogHeader>
+					<DialogTitle className="flex items-center gap-2 text-xl">
+						{courseId ? (
+							<>
+								<GraduationCap className="w-6 h-6 text-primary" />
+								إضافة كلاس جديد {courseName && `- ${courseName}`}
+							</>
+						) : (
+							<>
+								<Users className="w-6 h-6 text-primary" />
+								إضافة كلاس جديد
+							</>
+						)}
+					</DialogTitle>
+				</DialogHeader>
+
+				<form onSubmit={handleSubmit} className="space-y-4 mt-4">
+					<div className="space-y-2">
+						<Label htmlFor="name">اسم الكلاس *</Label>
+						<Input
+							id="name"
+							value={formData.name}
+							onChange={(e) =>
+								setFormData({ ...formData, name: e.target.value })
+							}
+							placeholder="أدخل اسم الكلاس"
+							required
+						/>
+					</div>
+
+					{courseId && (
+						<div className="space-y-2">
+							<Label htmlFor="level">المستوى *</Label>
+							<Select
+								value={formData.levelId}
+								onValueChange={(value) =>
+									setFormData({ ...formData, levelId: value })
+								}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="اختر المستوى" />
+								</SelectTrigger>
+								<SelectContent>
+									{levels.map((level) => (
+										<SelectItem key={level.id} value={level.id}>
+											مستوى {level.levelNumber}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					)}
+
+					<div className="space-y-2">
+						<Label htmlFor="teacher">المعلم</Label>
+						<Select
+							value={formData.teacherId}
+							onValueChange={(value) =>
+								setFormData({ ...formData, teacherId: value })
+							}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="اختر المعلم" />
+							</SelectTrigger>
+							<SelectContent>
+								{teachers.map((teacher) => (
+									<SelectItem key={teacher.id} value={teacher.id}>
+										{teacher.fullName}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div className="space-y-2">
+						<div className="flex items-center justify-between">
+							<Label>{courseId ? "الجدول الزمني *" : "الجدول الزمني"}</Label>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleAddSchedule}
+							>
+								<Plus className="w-4 h-4 ml-1" />
+								إضافة يوم
+							</Button>
+						</div>
+
+						<div className="space-y-2">
+							{formData.schedules.map((schedule, index) => (
+								<div
+									key={index}
+									className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg"
+								>
+									<Select
+										value={schedule.dayOfWeek}
+										onValueChange={(value) =>
+											handleScheduleChange(index, "dayOfWeek", value)
+										}
+									>
+										<SelectTrigger className="w-[120px]">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{daysOfWeek.map((day) => (
+												<SelectItem key={day.value} value={day.value}>
+													{day.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+
+									<Input
+										type="time"
+										value={schedule.startTime}
+										onChange={(e) =>
+											handleScheduleChange(index, "startTime", e.target.value)
+										}
+										className="w-[100px]"
+									/>
+
+									<span className="text-text-muted">إلى</span>
+
+									<Input
+										type="time"
+										value={schedule.endTime}
+										onChange={(e) =>
+											handleScheduleChange(index, "endTime", e.target.value)
+										}
+										className="w-[100px]"
+									/>
+
+									{formData.schedules.length > 1 && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="text-error"
+											onClick={() => handleRemoveSchedule(index)}
+										>
+											<X className="w-4 h-4" />
+										</Button>
+									)}
+								</div>
+							))}
+						</div>
+					</div>
+
+					<div className="flex justify-end gap-2 pt-4">
+						<Button type="button" variant="outline" onClick={onClose}>
+							إلغاء
+						</Button>
+						<Button type="submit" disabled={isPending}>
+							{isPending ? (
+								<>
+									<Loader2 className="w-4 h-4 ml-2 animate-spin" />
+									جاري الحفظ...
+								</>
+							) : (
+								"حفظ"
+							)}
+						</Button>
+					</div>
+				</form>
+			</DialogContent>
+		</Dialog>
+	);
 }
