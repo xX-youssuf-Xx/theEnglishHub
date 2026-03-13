@@ -6,14 +6,11 @@ WORKDIR /app
 COPY package.json bun.lock* ./
 RUN bun install
 
-# Copy .env.production for build-time variables
-COPY .env.production .env.production
-
 # Copy source code
 COPY . .
 
-# Build the application
-RUN bun run build
+# Build the application (VITE_API_URL will be injected at runtime)
+RUN VITE_API_URL=http://localhost:3091/api/trpc bun run build
 
 # Production stage - serve with lightweight server
 FROM oven/bun:1-alpine
