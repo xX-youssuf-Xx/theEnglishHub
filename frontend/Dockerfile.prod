@@ -31,23 +31,28 @@ COPY --from=builder --chown=bunjs:bunjs /app/dist ./dist
 # Copy package files for server
 COPY --from=builder --chown=bunjs:bunjs /app/package.json ./
 
-# Create a simple server file
+# Create a simple server file with proper client-side routing
 RUN cat > server.ts << 'EOF'
 import { serve } from 'bun';
 
 serve({
   port: 3090,
-  fetch(req) {
+  async fetch(req) {
     const url = new URL(req.url);
-    const filePath = url.pathname === '/' ? '/index.html' : url.pathname;
+    let filePath = url.pathname;
     
-    try {
+    // If it's a static asset (has extension), try to serve it
+    if (filePath.includes('.')) {
       const file = Bun.file(`./dist${filePath}`);
-      return new Response(file);
-    } catch (error) {
-      // Fallback to index.html for client-side routing
-      return new Response(Bun.file('./dist/index.html'));
+      if (await file.exists()) {
+        return new Response(file);
+      }
     }
+    
+    // For all other routes (including /login, /dashboard, etc.), serve index.html
+    // This enables client-side routing to work correctly
+    const indexFile = Bun.file('./dist/index.html');
+    return new Response(indexFile);
   },
 });
 
