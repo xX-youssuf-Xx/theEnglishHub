@@ -2,6 +2,10 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
+# Accept build argument for API URL
+ARG VITE_API_URL=https://api.englishhub.8bitsolutions.net/api/trpc
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Copy package files
 COPY package.json bun.lock* ./
 RUN bun install
@@ -9,8 +13,8 @@ RUN bun install
 # Copy source code
 COPY . .
 
-# Build the application (VITE_API_URL will be injected at runtime)
-RUN VITE_API_URL=http://localhost:3091/api/trpc bun run build
+# Build the application with the API URL
+RUN bun run build
 
 # Production stage - serve with lightweight server
 FROM oven/bun:1-alpine
