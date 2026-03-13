@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, adminProcedure } from '../trpc/context';
 import { courseService } from '../services/courses';
 import { db } from '../db';
-import { courses as coursesSchema, courseLevels, classes as classesSchema, coursePrerequisites } from '../db/schema';
+import { courses as coursesSchema, courseLevels, classes as classesSchema, coursePrerequisites, teachers } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
 export const courseRouter = router({
