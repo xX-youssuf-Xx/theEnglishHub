@@ -20,7 +20,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/trpc';
+const API_URL = import.meta.env.VITE_API_URL || 'https://englishhub.8bitsolutions.net/api/trpc';
 const BASE_API_URL = API_URL.replace('/trpc', '');
 
 export function AuthProvider({ children }: { children: ReactNode }) {

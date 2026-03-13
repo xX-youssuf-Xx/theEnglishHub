@@ -2,37 +2,27 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
-# Create .env file FIRST (before installing dependencies)
-# This ensures Vite picks up the environment variables during build
-ARG VITE_API_URL
-RUN if [ -n "$VITE_API_URL" ]; then \
-    echo "VITE_API_URL=$VITE_API_URL" > .env.production; \
-    echo "Created .env.production with: $VITE_API_URL"; \
-    else \
-    echo "VITE_API_URL=https://englishhub.8bitsolutions.net/api/trpc" > .env.production; \
-    echo "Created .env.production with default URL"; \
-    fi
-
-# Show the content
-RUN cat .env.production
-
-# Copy package files
+# Copy package files first
 COPY package.json bun.lock* ./
 RUN bun install
 
 # Copy source code
 COPY . .
 
-# Show env file location and verify Vite can see it
-RUN ls -la .env.production
+# Get the API URL from environment or use default
+# In Dokploy, set VITE_API_URL in the Environment tab
+ARG VITE_API_URL=https://englishhub.8bitsolutions.net/api/trpc
+ENV VITE_API_URL=${VITE_API_URL}
 
-# Build the application in production mode
-# Explicitly set NODE_ENV to production
-ENV NODE_ENV=production
-RUN bun run build
+# Debug: Show what we're using
+RUN echo "Building with VITE_API_URL: $VITE_API_URL"
 
-# Debug: Show what URL was baked into the build
-RUN grep -r "localhost:3001" dist/ || echo "No localhost references found"
+# Build the application with inline environment variable
+# This ensures Vite picks it up during build
+RUN VITE_API_URL=${VITE_API_URL} bun run build
+
+# Debug: Check if localhost is still in the build
+RUN grep -o "localhost:3001" dist/static/js/*.js | wc -l | xargs echo "Localhost references found:"
 
 # Production stage - serve with lightweight server
 FROM oven/bun:1-alpine

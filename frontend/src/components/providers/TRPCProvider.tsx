@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { trpc } from '@/lib/trpc';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/trpc';
+const API_URL = import.meta.env.VITE_API_URL || 'https://englishhub.8bitsolutions.net/api/trpc';
 
 export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
