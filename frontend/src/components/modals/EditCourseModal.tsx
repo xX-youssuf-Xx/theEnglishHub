@@ -89,7 +89,7 @@ export function EditCourseModal({
 				name: formData.name,
 				description: formData.description || undefined,
 				syllabus: formData.syllabus || undefined,
-				sessionsPerMonth: parseInt(formData.sessionsPerMonth),
+				sessionsPerMonth: parseInt(formData.sessionsPerMonth, 10),
 			},
 		});
 	};

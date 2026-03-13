@@ -91,7 +91,7 @@ export function EditStudentModal({
 			id: studentId,
 			data: {
 				fullName: formData.fullName,
-				age: formData.age ? parseInt(formData.age) : undefined,
+				age: formData.age ? parseInt(formData.age, 10) : undefined,
 				parentName: formData.parentName,
 				parentPhone: formData.parentPhone,
 				address: formData.address,

@@ -87,7 +87,7 @@ export function AddCourseModal({ isOpen, onClose }: AddCourseModalProps) {
 			name: formData.name,
 			description: formData.description || undefined,
 			syllabus: formData.syllabus || undefined,
-			sessionsPerMonth: parseInt(formData.sessionsPerMonth),
+			sessionsPerMonth: parseInt(formData.sessionsPerMonth, 10),
 			prerequisiteCourseIds:
 				selectedPrerequisites.length > 0 ? selectedPrerequisites : undefined,
 		});

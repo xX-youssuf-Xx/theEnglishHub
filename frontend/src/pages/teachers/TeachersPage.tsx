@@ -18,7 +18,6 @@ import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationM
 import { EditTeacherModal } from "@/components/modals/EditTeacherModal";
 import { ManageTeacherClassesModal } from "@/components/modals/ManageTeacherClassesModal";
 import { ViewTeacherModal } from "@/components/modals/ViewTeacherModal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {

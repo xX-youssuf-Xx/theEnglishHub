@@ -102,7 +102,7 @@ export function AddLevelModal({
 		}
 
 		// Check if level number already exists
-		const levelNum = parseInt(formData.levelNumber);
+		const levelNum = parseInt(formData.levelNumber, 10);
 		if (existingLevels.some((l: any) => l.levelNumber === levelNum)) {
 			toast({
 				variant: "destructive",
@@ -118,7 +118,7 @@ export function AddLevelModal({
 		addLevelMutation.mutate({
 			courseId,
 			levelNumber: levelNum,
-			durationMonths: parseInt(formData.durationMonths),
+			durationMonths: parseInt(formData.durationMonths, 10),
 			pricePerMonth: formData.pricePerMonth
 				? parseFloat(formData.pricePerMonth)
 				: undefined,

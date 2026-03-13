@@ -1,14 +1,9 @@
 import {
 	AlertCircle,
-	Calendar,
-	CheckCircle,
 	CheckSquare,
-	CreditCard,
 	GraduationCap,
 	Loader2,
-	Plus,
 	User,
-	Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +46,7 @@ interface PendingPayment {
 
 export function PaymentsPage() {
 	const [activeTab, setActiveTab] = useState("students");
-	const [page, setPage] = useState(1);
+	const [page, _setPage] = useState(1);
 	const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(
 		null,
 	);

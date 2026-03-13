@@ -5,7 +5,6 @@ import {
 	endOfWeek,
 	format,
 	isSameDay,
-	parseISO,
 	startOfDay,
 	startOfWeek,
 } from "date-fns";
@@ -16,15 +15,12 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Clock,
-	GraduationCap,
 	Loader2,
 	MoreVertical,
-	Plus,
 	RefreshCw,
 	UserCheck,
 	Users,
 	UserX,
-	X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -191,7 +187,7 @@ export function CalendarPage() {
 
 		return daySchedule.sessions.filter((session: Session) => {
 			if (!session.startTime) return false;
-			const sessionHour = parseInt(session.startTime.split(":")[0]);
+			const sessionHour = parseInt(session.startTime.split(":")[0], 10);
 			return sessionHour === hour;
 		});
 	};
@@ -202,10 +198,10 @@ export function CalendarPage() {
 		const startParts = session.startTime.split(":");
 		const endParts = session.endTime.split(":");
 
-		const startHour = parseInt(startParts[0]);
-		const startMinute = parseInt(startParts[1]);
-		const endHour = parseInt(endParts[0]);
-		const endMinute = parseInt(endParts[1]);
+		const startHour = parseInt(startParts[0], 10);
+		const startMinute = parseInt(startParts[1], 10);
+		const endHour = parseInt(endParts[0], 10);
+		const endMinute = parseInt(endParts[1], 10);
 
 		const durationMinutes =
 			(endHour - startHour) * 60 + (endMinute - startMinute);

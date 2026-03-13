@@ -20,7 +20,6 @@ import { EditStudentModal } from "@/components/modals/EditStudentModal";
 import { EnrollInCourseModal } from "@/components/modals/EnrollInCourseModal";
 import { RecordPaymentModal } from "@/components/modals/RecordPaymentModal";
 import { ViewStudentModal } from "@/components/modals/ViewStudentModal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {

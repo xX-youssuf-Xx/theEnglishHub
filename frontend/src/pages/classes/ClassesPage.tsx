@@ -15,7 +15,6 @@ import { AddClassModal } from "@/components/modals/AddClassModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import { EditClassModal } from "@/components/modals/EditClassModal";
 import { ViewClassModal } from "@/components/modals/ViewClassModal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {

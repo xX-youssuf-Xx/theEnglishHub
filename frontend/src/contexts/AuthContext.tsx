@@ -5,7 +5,6 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface User {
 	id: string;
@@ -73,26 +72,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	const login = async (username: string, password: string) => {
-		try {
-			const response = await fetch(`${BASE_API_URL}/auth/login`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ username, password }),
-			});
+		const response = await fetch(`${BASE_API_URL}/auth/login`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ username, password }),
+		});
 
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || "فشل تسجيل الدخول");
-			}
-
-			const data = await response.json();
-			setToken(data.token);
-			setUser(data.user);
-			localStorage.setItem("token", data.token);
-			localStorage.setItem("user", JSON.stringify(data.user));
-		} catch (error) {
-			throw error;
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.message || "فشل تسجيل الدخول");
 		}
+
+		const data = await response.json();
+		setToken(data.token);
+		setUser(data.user);
+		localStorage.setItem("token", data.token);
+		localStorage.setItem("user", JSON.stringify(data.user));
 	};
 
 	const logout = () => {

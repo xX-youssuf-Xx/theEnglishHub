@@ -2,14 +2,12 @@ import {
 	BarChart3,
 	BookOpen,
 	Calendar,
-	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	CreditCard,
 	GraduationCap,
 	LayoutDashboard,
 	LogOut,
-	Menu,
 	Settings,
 	Users,
 	X,
@@ -57,7 +55,7 @@ export function Sidebar({
 }: SidebarProps) {
 	const { user, logout, hasPermission } = useAuth();
 	const location = useLocation();
-	const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+	const [_expandedMenus, _setExpandedMenus] = useState<string[]>([]);
 
 	const filteredNavItems = navItems.filter((item) => {
 		if (item.path === "/settings") return hasPermission("view_settings");

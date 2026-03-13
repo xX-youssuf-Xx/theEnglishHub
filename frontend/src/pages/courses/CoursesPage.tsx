@@ -64,8 +64,7 @@ export function CoursesPage() {
 		data?.data?.filter(
 			(course: any) =>
 				course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				(course.description &&
-					course.description.toLowerCase().includes(searchQuery.toLowerCase())),
+				course.description?.toLowerCase().includes(searchQuery.toLowerCase()),
 		) ?? [];
 
 	const total = courses.length;

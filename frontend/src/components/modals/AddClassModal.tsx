@@ -183,7 +183,7 @@ export function AddClassModal({
 				levelId: formData.levelId,
 				teacherId: formData.teacherId || undefined,
 				schedules: validSchedules.map((s) => ({
-					dayOfWeek: parseInt(s.dayOfWeek),
+					dayOfWeek: parseInt(s.dayOfWeek, 10),
 					startTime: s.startTime,
 					endTime: s.endTime,
 				})),
@@ -194,7 +194,7 @@ export function AddClassModal({
 				name: formData.name,
 				teacherId: formData.teacherId || undefined,
 				scheduleDayOfWeek: formData.schedules[0]?.dayOfWeek
-					? parseInt(formData.schedules[0].dayOfWeek)
+					? parseInt(formData.schedules[0].dayOfWeek, 10)
 					: undefined,
 				scheduleStartTime: formData.schedules[0]?.startTime || undefined,
 				scheduleEndTime: formData.schedules[0]?.endTime || undefined,

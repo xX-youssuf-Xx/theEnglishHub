@@ -1,4 +1,4 @@
-import { GraduationCap, Loader2, Plus, X } from "lucide-react";
+import { GraduationCap, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,7 @@ interface EditClassModalProps {
 	onClose: () => void;
 }
 
-const daysOfWeek = [
+const _daysOfWeek = [
 	"الأحد",
 	"الإثنين",
 	"الثلاثاء",

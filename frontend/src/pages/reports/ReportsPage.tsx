@@ -1,19 +1,10 @@
-import {
-	AlertCircle,
-	BarChart3,
-	CreditCard,
-	Download,
-	Loader2,
-	Users,
-} from "lucide-react";
+import { BarChart3, CreditCard, Download, Loader2, Users } from "lucide-react";
 import { useState } from "react";
 import {
 	Bar,
 	BarChart,
 	CartesianGrid,
 	Cell,
-	Line,
-	LineChart,
 	Pie,
 	PieChart,
 	ResponsiveContainer,
@@ -33,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 
 export function ReportsPage() {
-	const [dateRange, setDateRange] = useState({
+	const [dateRange, _setDateRange] = useState({
 		startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
 		endDate: new Date(),
 	});
@@ -130,7 +121,7 @@ export function ReportsPage() {
 													borderRadius: "8px",
 												}}
 												formatter={(value: number) =>
-													value.toLocaleString() + " ج.م"
+													`${value.toLocaleString()} ج.م`
 												}
 											/>
 											<Bar

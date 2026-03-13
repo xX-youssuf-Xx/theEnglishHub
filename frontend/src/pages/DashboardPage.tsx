@@ -1,7 +1,6 @@
 import {
 	AlertCircle,
 	BarChart3,
-	CheckCircle,
 	CreditCard,
 	DollarSign,
 	GraduationCap,
@@ -11,22 +10,7 @@ import {
 	TrendingUp,
 	Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import {
-	Bar,
-	BarChart,
-	CartesianGrid,
-	Cell,
-	Line,
-	LineChart,
-	Pie,
-	PieChart,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
-} from "recharts";
-import { Badge } from "@/components/ui/badge";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
