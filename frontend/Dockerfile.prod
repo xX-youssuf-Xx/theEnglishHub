@@ -2,8 +2,9 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
-# Accept build argument for API URL
-ARG VITE_API_URL=https://englishhub.8bitsolutions.net/api/trpc
+# Build arguments - these should be passed during build time
+# In Dokploy, set these in the Build Args section
+ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Copy package files
@@ -13,7 +14,7 @@ RUN bun install
 # Copy source code
 COPY . .
 
-# Build the application with the API URL
+# Build the application with the API URL from build arg
 RUN bun run build
 
 # Production stage - serve with lightweight server
