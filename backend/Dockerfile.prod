@@ -15,12 +15,12 @@ RUN cat > start.sh << 'EOF'
 echo "Waiting for database..."
 sleep 5
 
-# Run database migrations
+# Run database migrations (for fresh databases)
 echo "Running database migrations..."
-bun run src/db/apply-schema-changes.ts || echo "Migration script not found or failed, continuing..."
+bun run src/db/init-fresh-db.ts || echo "Initial migration failed, trying updates..."
 
-# Alternative: If you have drizzle-kit migrations
-# bun run db:migrate
+# Run update migrations (for existing databases)
+bun run src/db/apply-schema-changes.ts || echo "Update migrations completed or failed"
 
 # Start the application
 echo "Starting application..."
