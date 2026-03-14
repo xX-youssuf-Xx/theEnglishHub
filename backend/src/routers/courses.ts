@@ -182,6 +182,7 @@ export const courseRouter = router({
         where: eq(coursesSchema.publicId, input),
         with: {
           classes: {
+            where: eq(classesSchema.isActive, true),
             with: {
               level: true,
               teacher: true,

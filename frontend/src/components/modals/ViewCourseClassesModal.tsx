@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 import { AddClassModal } from "./AddClassModal";
+import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 import { EditClassModal } from "./EditClassModal";
 
 interface ViewCourseClassesModalProps {
@@ -56,6 +57,9 @@ export function ViewCourseClassesModal({
 }: ViewCourseClassesModalProps) {
 	const [editingClassId, setEditingClassId] = useState<string | null>(null);
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+	const [deletingClassId, setDeletingClassId] = useState<string | null>(null);
+	const [deletingClassName, setDeletingClassName] = useState("");
 	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
@@ -82,8 +86,19 @@ export function ViewCourseClassesModal({
 		},
 	});
 
-	const handleDeleteClass = (classId: string) => {
-		deleteClassMutation.mutate(classId);
+	const handleDeleteClass = (classId: string, className: string) => {
+		setDeletingClassId(classId);
+		setDeletingClassName(className);
+		setIsDeleteModalOpen(true);
+	};
+
+	const confirmDeleteClass = () => {
+		if (deletingClassId) {
+			deleteClassMutation.mutate(deletingClassId);
+			setIsDeleteModalOpen(false);
+			setDeletingClassId(null);
+			setDeletingClassName("");
+		}
 	};
 
 	const handleEditClass = (classId: string) => {
@@ -181,7 +196,7 @@ export function ViewCourseClassesModal({
 													variant="ghost"
 													size="icon"
 													className="text-error hover:text-error hover:bg-error/10"
-													onClick={() => handleDeleteClass(cls.id)}
+													onClick={() => handleDeleteClass(cls.id, cls.name)}
 													disabled={deleteClassMutation.isPending}
 												>
 													<Trash2 className="w-4 h-4" />
@@ -213,6 +228,19 @@ export function ViewCourseClassesModal({
 				onClose={() => setIsAddModalOpen(false)}
 				courseId={courseId || undefined}
 				courseName={courseName}
+			/>
+
+			<DeleteConfirmationModal
+				isOpen={isDeleteModalOpen}
+				onClose={() => {
+					setIsDeleteModalOpen(false);
+					setDeletingClassId(null);
+					setDeletingClassName("");
+				}}
+				onConfirm={confirmDeleteClass}
+				title="حذف الكلاس"
+				description={`هل أنت متأكد من حذف الكلاس "${deletingClassName}"؟`}
+				isLoading={deleteClassMutation.isPending}
 			/>
 		</>
 	);
