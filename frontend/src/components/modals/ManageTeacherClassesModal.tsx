@@ -9,6 +9,7 @@ import {
 	X,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +33,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface ManageTeacherClassesModalProps {
@@ -63,7 +63,6 @@ export function ManageTeacherClassesModal({
 	const [paymentAmount, setPaymentAmount] = useState("");
 	const [paymentCycle, setPaymentCycle] = useState<"4" | "8">("4");
 	const [isAddingMode, setIsAddingMode] = useState(false);
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 
@@ -83,19 +82,12 @@ export function ManageTeacherClassesModal({
 		onSuccess: () => {
 			utils.teachers.getClassesByCourse.invalidate(teacherId || "");
 			utils.teachers.getAvailableClasses.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم إضافة المعلم إلى الكلاس بنجاح",
-			});
+			toast.success("تم إضافة المعلم إلى الكلاس بنجاح");
 			resetAddForm();
 			setIsAddingMode(false);
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء إضافة المعلم",
-			});
+			toast.error(err.message || "حدث خطأ أثناء إضافة المعلم");
 		},
 	});
 
@@ -103,17 +95,10 @@ export function ManageTeacherClassesModal({
 		onSuccess: () => {
 			utils.teachers.getClassesByCourse.invalidate(teacherId || "");
 			utils.teachers.getAvailableClasses.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم إزالة المعلم من الكلاس بنجاح",
-			});
+			toast.success("تم إزالة المعلم من الكلاس بنجاح");
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء إزالة المعلم",
-			});
+			toast.error(err.message || "حدث خطأ أثناء إزالة المعلم");
 		},
 	});
 
@@ -126,11 +111,7 @@ export function ManageTeacherClassesModal({
 
 	const handleAssign = () => {
 		if (!selectedClassId || !paymentAmount || !teacherId) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "جميع الحقول مطلوبة",
-			});
+			toast.error("جميع الحقول مطلوبة");
 			return;
 		}
 

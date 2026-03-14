@@ -1,5 +1,6 @@
 import { BookOpen, Layers, Loader2, Plus, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,7 +11,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface AddLevelModalProps {
@@ -35,7 +35,6 @@ export function AddLevelModal({
 	const [books, setBooks] = useState<Array<{ name: string; price: string }>>(
 		[],
 	);
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 	const { data: levelsData } = trpc.courses.getLevels.useQuery(
@@ -48,20 +47,12 @@ export function AddLevelModal({
 		onSuccess: () => {
 			utils.courses.getLevels.invalidate({ courseId: courseId || "" });
 			utils.courses.getAll.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم إضافة المستوى بنجاح",
-				variant: "success",
-			});
+			toast.success("تم إضافة المستوى بنجاح");
 			onClose();
 			resetForm();
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء إضافة المستوى",
-			});
+			toast.error(err.message || "حدث خطأ أثناء إضافة المستوى");
 		},
 	});
 
@@ -93,22 +84,14 @@ export function AddLevelModal({
 		e.preventDefault();
 
 		if (!courseId || !formData.levelNumber) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "رقم المستوى مطلوب",
-			});
+			toast.error("رقم المستوى مطلوب");
 			return;
 		}
 
 		// Check if level number already exists
 		const levelNum = parseInt(formData.levelNumber, 10);
 		if (existingLevels.some((l: any) => l.levelNumber === levelNum)) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "هذا المستوى موجود بالفعل",
-			});
+			toast.error("هذا المستوى موجود بالفعل");
 			return;
 		}
 

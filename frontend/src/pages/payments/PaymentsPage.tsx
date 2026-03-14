@@ -6,6 +6,7 @@ import {
 	User,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,6 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface PendingPayment {
@@ -53,7 +53,6 @@ export function PaymentsPage() {
 	const [isSettleDialogOpen, setIsSettleDialogOpen] = useState(false);
 	const [settleNotes, setSettleNotes] = useState("");
 	const limit = 10;
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 
@@ -89,20 +88,13 @@ export function PaymentsPage() {
 		onSuccess: () => {
 			utils.payments.getPendingStudentPayments.invalidate();
 			utils.payments.getStudentPayments.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم تسديد الدفعة بنجاح",
-			});
+			toast.success("تم تسديد الدفعة بنجاح");
 			setIsSettleDialogOpen(false);
 			setSelectedPayment(null);
 			setSettleNotes("");
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message,
-			});
+			toast.error(err.message);
 		},
 	});
 
@@ -110,20 +102,13 @@ export function PaymentsPage() {
 		onSuccess: () => {
 			utils.payments.getPendingTeacherPayments.invalidate();
 			utils.payments.getTeacherPayments.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم تسديد دفعة المعلم بنجاح",
-			});
+			toast.success("تم تسديد دفعة المعلم بنجاح");
 			setIsSettleDialogOpen(false);
 			setSelectedPayment(null);
 			setSettleNotes("");
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message,
-			});
+			toast.error(err.message);
 		},
 	});
 

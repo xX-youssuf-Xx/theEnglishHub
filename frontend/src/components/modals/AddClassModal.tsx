@@ -1,5 +1,6 @@
 import { GraduationCap, Loader2, Plus, Users, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -16,7 +17,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface AddClassModalProps {
@@ -48,7 +48,6 @@ export function AddClassModal({
 		levelId: "",
 		schedules: [{ dayOfWeek: "0", startTime: "", endTime: "" }],
 	});
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 
@@ -67,19 +66,12 @@ export function AddClassModal({
 	const createClassMutation = trpc.classes.create.useMutation({
 		onSuccess: () => {
 			utils.classes.getAll.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم إضافة الكلاس بنجاح",
-			});
+			toast.success("تم إضافة الكلاس بنجاح");
 			onClose();
 			resetForm();
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء الإضافة",
-			});
+			toast.error(err.message || "حدث خطأ أثناء الإضافة");
 		},
 	});
 
@@ -88,19 +80,12 @@ export function AddClassModal({
 			if (courseId) {
 				utils.courses.getClasses.invalidate(courseId);
 			}
-			toast({
-				title: "تم بنجاح",
-				description: "تم إضافة الكلاس بنجاح",
-			});
+			toast.success("تم إضافة الكلاس بنجاح");
 			onClose();
 			resetForm();
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء الإضافة",
-			});
+			toast.error(err.message || "حدث خطأ أثناء الإضافة");
 		},
 	});
 
@@ -146,22 +131,14 @@ export function AddClassModal({
 		e.preventDefault();
 
 		if (!formData.name) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "اسم الكلاس مطلوب",
-			});
+			toast.error("اسم الكلاس مطلوب");
 			return;
 		}
 
 		if (courseId) {
 			// Creating class within a course context
 			if (!formData.levelId) {
-				toast({
-					variant: "destructive",
-					title: "خطأ في التحقق",
-					description: "المستوى مطلوب",
-				});
+				toast.error("المستوى مطلوب");
 				return;
 			}
 
@@ -169,11 +146,7 @@ export function AddClassModal({
 				(s) => s.startTime && s.endTime,
 			);
 			if (validSchedules.length === 0) {
-				toast({
-					variant: "destructive",
-					title: "خطأ في التحقق",
-					description: "يجب إضافة جدول زمني واحد على الأقل",
-				});
+				toast.error("يجب إضافة جدول زمني واحد على الأقل");
 				return;
 			}
 

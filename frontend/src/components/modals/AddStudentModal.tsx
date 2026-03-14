@@ -7,6 +7,7 @@ import {
 	UserCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface AddStudentModalProps {
@@ -42,7 +42,6 @@ export function AddStudentModal({
 		emergencyContact: "",
 	});
 	const [error, setError] = useState("");
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 	const createStudent = trpc.students.create.useMutation({
@@ -58,64 +57,37 @@ export function AddStudentModal({
 				address: "",
 				emergencyContact: "",
 			});
-			toast({
-				title: "تم بنجاح",
-				description: "تم إضافة الطالب بنجاح",
-			});
+			toast.success("تم إضافة الطالب بنجاح");
 		},
 		onError: (err) => {
 			setError(err.message || "حدث خطأ أثناء إضافة الطالب");
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء إضافة الطالب",
-			});
+			toast.error(err.message || "حدث خطأ أثناء إضافة الطالب");
 		},
 	});
 
 	const validateForm = () => {
 		if (!formData.fullName || formData.fullName.length < 3) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "يجب أن يكون اسم الطالب 3 أحرف على الأقل",
-			});
+			toast.error("يجب أن يكون اسم الطالب 3 أحرف على الأقل");
 			return false;
 		}
 
 		if (!formData.parentName || formData.parentName.length < 3) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "يجب أن يكون اسم ولي الأمر 3 أحرف على الأقل",
-			});
+			toast.error("يجب أن يكون اسم ولي الأمر 3 أحرف على الأقل");
 			return false;
 		}
 
 		if (!formData.address || formData.address.length < 3) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "يجب أن يكون العنوان 3 أحرف على الأقل",
-			});
+			toast.error("يجب أن يكون العنوان 3 أحرف على الأقل");
 			return false;
 		}
 
 		if (!formData.parentPhone) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "رقم هاتف ولي الأمر مطلوب",
-			});
+			toast.error("رقم هاتف ولي الأمر مطلوب");
 			return false;
 		}
 
 		if (!formData.emergencyContact) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "رقم الطوارئ مطلوب",
-			});
+			toast.error("رقم الطوارئ مطلوب");
 			return false;
 		}
 

@@ -1,5 +1,6 @@
 import { BookOpen, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -17,7 +18,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface EditCourseModalProps {
@@ -39,7 +39,6 @@ export function EditCourseModal({
 		syllabus: "",
 		sessionsPerMonth: "4",
 	});
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 
@@ -63,18 +62,11 @@ export function EditCourseModal({
 	const updateMutation = trpc.courses.update.useMutation({
 		onSuccess: () => {
 			utils.courses.getAll.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم تعديل الكورس بنجاح",
-			});
+			toast.success("تم تعديل الكورس بنجاح");
 			onOpenChange(false);
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء التعديل",
-			});
+			toast.error(err.message || "حدث خطأ أثناء التعديل");
 		},
 	});
 

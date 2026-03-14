@@ -23,6 +23,7 @@ import {
 	UserX,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +40,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 const daysOfWeek = [
@@ -76,7 +76,6 @@ export function CalendarPage() {
 	const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
 		null,
 	);
-	const { toast } = useToast();
 
 	const startOfCurrentWeek = startOfWeek(currentWeek, { weekStartsOn: 0 });
 	const endOfCurrentWeek = endOfWeek(currentWeek, { weekStartsOn: 0 });
@@ -96,39 +95,23 @@ export function CalendarPage() {
 
 	const markCompleteMutation = trpc.sessions.markComplete.useMutation({
 		onSuccess: () => {
-			toast({
-				title: "تم بنجاح",
-				description: "تم تحديد الحصة كمكتملة",
-				variant: "success",
-			});
+			toast.success("تم تحديد الحصة كمكتملة");
 			utils.sessions.getWeeklySchedule.invalidate();
 			setSelectedSessionId(null);
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message,
-			});
+			toast.error(err.message);
 		},
 	});
 
 	const generateSessionsMutation =
 		trpc.sessions.generateSessionsForAllClasses.useMutation({
 			onSuccess: (data) => {
-				toast({
-					title: "تم بنجاح",
-					description: `تم إنشاء ${data.totalSessionsCreated} حصة جديدة`,
-					variant: "success",
-				});
+				toast.success(`تم إنشاء ${data.totalSessionsCreated} حصة جديدة`);
 				utils.sessions.getWeeklySchedule.invalidate();
 			},
 			onError: (err) => {
-				toast({
-					variant: "destructive",
-					title: "خطأ",
-					description: err.message,
-				});
+				toast.error(err.message);
 			},
 		});
 

@@ -14,6 +14,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { AddCourseModal } from "@/components/modals/AddCourseModal";
 import { AddLevelModal } from "@/components/modals/AddLevelModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
@@ -38,15 +39,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Toaster } from "@/components/ui/toaster";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 export function CoursesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [page, setPage] = useState(1);
 	const limit = 10;
-	const { toast } = useToast();
+	const utils = trpc.useUtils();
 
 	// Modal states
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -73,20 +72,15 @@ export function CoursesPage() {
 
 	const deleteMutation = trpc.courses.delete.useMutation({
 		onSuccess: () => {
-			toast({
-				title: "تم بنجاح",
-				description: "تم حذف الكورس بنجاح",
-			});
+			toast.success("تم حذف الكورس بنجاح");
+			// Invalidate and refetch courses
+			utils.courses.getAll.invalidate();
 			setIsDeleteModalOpen(false);
 			setSelectedCourseId(null);
 			setSelectedCourseName("");
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء الحذف",
-			});
+			toast.error(err.message || "حدث خطأ أثناء الحذف");
 		},
 	});
 
@@ -140,8 +134,6 @@ export function CoursesPage() {
 
 	return (
 		<div className="space-y-6">
-			<Toaster />
-
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
 					<h1 className="text-3xl font-bold text-text-heading">

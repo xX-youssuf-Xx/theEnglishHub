@@ -11,6 +11,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { AddClassModal } from "@/components/modals/AddClassModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import { EditClassModal } from "@/components/modals/EditClassModal";
@@ -60,11 +61,17 @@ export function ClassesPage() {
 		limit,
 	});
 
+	const utils = trpc.useUtils();
 	const deleteMutation = trpc.classes.delete.useMutation({
 		onSuccess: () => {
+			toast.success("تم حذف الكلاس بنجاح");
+			utils.classes.getAll.invalidate();
 			setIsDeleteModalOpen(false);
 			setSelectedClassId(null);
 			setSelectedClassName("");
+		},
+		onError: (err) => {
+			toast.error(err.message || "حدث خطأ أثناء الحذف");
 		},
 	});
 

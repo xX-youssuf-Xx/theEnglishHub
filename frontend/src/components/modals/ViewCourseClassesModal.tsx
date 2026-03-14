@@ -9,6 +9,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 import { AddClassModal } from "./AddClassModal";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
@@ -60,7 +60,6 @@ export function ViewCourseClassesModal({
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 	const [deletingClassId, setDeletingClassId] = useState<string | null>(null);
 	const [deletingClassName, setDeletingClassName] = useState("");
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 
@@ -72,17 +71,10 @@ export function ViewCourseClassesModal({
 	const deleteClassMutation = trpc.courses.deleteClass.useMutation({
 		onSuccess: () => {
 			utils.courses.getClasses.invalidate(courseId || "");
-			toast({
-				title: "تم بنجاح",
-				description: "تم حذف الكلاس بنجاح",
-			});
+			toast.success("تم حذف الكلاس بنجاح");
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء الحذف",
-			});
+			toast.error(err.message || "حدث خطأ أثناء الحذف");
 		},
 	});
 

@@ -1,5 +1,6 @@
 import { BookOpen, Clock, Loader2, Users } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,7 +15,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface EnrollInCourseModalProps {
@@ -43,7 +43,6 @@ export function EnrollInCourseModal({
 	const [selectedCourseId, setSelectedCourseId] = useState("");
 	const [selectedLevelId, setSelectedLevelId] = useState("");
 	const [selectedClassId, setSelectedClassId] = useState("");
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 
@@ -68,10 +67,7 @@ export function EnrollInCourseModal({
 			if (studentId) {
 				utils.students.getById.invalidate(studentId);
 			}
-			toast({
-				title: "تم بنجاح",
-				description: `تم تسجيل الطالب ${studentName} في الكورس والكلاس بنجاح`,
-			});
+			toast.success(`تم تسجيل الطالب ${studentName} في الكورس والكلاس بنجاح`);
 			onClose();
 			// Reset form
 			setSelectedCourseId("");
@@ -79,11 +75,7 @@ export function EnrollInCourseModal({
 			setSelectedClassId("");
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء تسجيل الطالب",
-			});
+			toast.error(err.message || "حدث خطأ أثناء تسجيل الطالب");
 		},
 	});
 
@@ -91,29 +83,17 @@ export function EnrollInCourseModal({
 		e.preventDefault();
 
 		if (!selectedCourseId) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "يجب اختيار كورس",
-			});
+			toast.error("يجب اختيار كورس");
 			return;
 		}
 
 		if (!selectedLevelId) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "يجب اختيار مستوى",
-			});
+			toast.error("يجب اختيار مستوى");
 			return;
 		}
 
 		if (!selectedClassId) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "يجب اختيار كلاس",
-			});
+			toast.error("يجب اختيار كلاس");
 			return;
 		}
 

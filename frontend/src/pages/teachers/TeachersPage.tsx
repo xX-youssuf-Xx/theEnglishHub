@@ -13,6 +13,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { AddTeacherModal } from "@/components/modals/AddTeacherModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import { EditTeacherModal } from "@/components/modals/EditTeacherModal";
@@ -64,10 +65,14 @@ export function TeachersPage() {
 
 	const deleteMutation = trpc.teachers.delete.useMutation({
 		onSuccess: () => {
+			toast.success("تم حذف المعلم بنجاح");
 			utils.teachers.getAll.invalidate();
 			setIsDeleteModalOpen(false);
 			setSelectedTeacherId(null);
 			setSelectedTeacherName("");
+		},
+		onError: (err) => {
+			toast.error(err.message || "حدث خطأ أثناء الحذف");
 		},
 	});
 

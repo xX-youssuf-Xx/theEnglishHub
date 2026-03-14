@@ -14,6 +14,7 @@ import {
 	Wallet,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { AddStudentModal } from "@/components/modals/AddStudentModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import { EditStudentModal } from "@/components/modals/EditStudentModal";
@@ -37,7 +38,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Toaster } from "@/components/ui/toaster";
 import { trpc } from "@/lib/trpc";
 
 export function StudentsPage() {
@@ -70,10 +70,14 @@ export function StudentsPage() {
 	const utils = trpc.useUtils();
 	const deleteMutation = trpc.students.delete.useMutation({
 		onSuccess: () => {
+			toast.success("تم حذف الطالب بنجاح");
 			utils.students.getAll.invalidate();
 			setDeleteModalOpen(false);
 			setSelectedStudentId(null);
 			setSelectedStudentName("");
+		},
+		onError: (err) => {
+			toast.error(err.message || "حدث خطأ أثناء الحذف");
 		},
 	});
 
@@ -120,8 +124,6 @@ export function StudentsPage() {
 
 	return (
 		<div className="space-y-6">
-			<Toaster />
-
 			{/* Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>

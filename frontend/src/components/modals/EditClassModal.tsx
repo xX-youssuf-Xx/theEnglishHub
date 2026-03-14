@@ -1,5 +1,6 @@
 import { GraduationCap, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -16,7 +17,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface EditClassModalProps {
@@ -47,7 +47,6 @@ export function EditClassModal({
 		levelId: "",
 		teacherId: "",
 	});
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 
@@ -80,18 +79,11 @@ export function EditClassModal({
 	const updateClassMutation = trpc.courses.updateClass.useMutation({
 		onSuccess: () => {
 			utils.courses.getClasses.invalidate(courseId || "");
-			toast({
-				title: "تم بنجاح",
-				description: "تم تعديل الكلاس بنجاح",
-			});
+			toast.success("تم تعديل الكلاس بنجاح");
 			onClose();
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء التعديل",
-			});
+			toast.error(err.message || "حدث خطأ أثناء التعديل");
 		},
 	});
 
@@ -99,11 +91,7 @@ export function EditClassModal({
 		e.preventDefault();
 
 		if (!classId || !formData.name || !formData.levelId) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "اسم الكلاس والمستوى مطلوبان",
-			});
+			toast.error("اسم الكلاس والمستوى مطلوبان");
 			return;
 		}
 

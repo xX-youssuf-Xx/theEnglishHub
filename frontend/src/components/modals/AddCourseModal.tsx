@@ -1,5 +1,6 @@
 import { BookOpen, Link2, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -17,7 +18,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { trpc } from "@/lib/trpc";
 
 interface AddCourseModalProps {
@@ -35,7 +35,6 @@ export function AddCourseModal({ isOpen, onClose }: AddCourseModalProps) {
 	const [selectedPrerequisites, setSelectedPrerequisites] = useState<string[]>(
 		[],
 	);
-	const { toast } = useToast();
 
 	const utils = trpc.useUtils();
 	const { data: coursesData } = trpc.courses.getAll.useQuery();
@@ -45,19 +44,12 @@ export function AddCourseModal({ isOpen, onClose }: AddCourseModalProps) {
 	const createMutation = trpc.courses.create.useMutation({
 		onSuccess: () => {
 			utils.courses.getAll.invalidate();
-			toast({
-				title: "تم بنجاح",
-				description: "تم إضافة الكورس بنجاح",
-			});
+			toast.success("تم إضافة الكورس بنجاح");
 			onClose();
 			resetForm();
 		},
 		onError: (err) => {
-			toast({
-				variant: "destructive",
-				title: "خطأ",
-				description: err.message || "حدث خطأ أثناء إضافة الكورس",
-			});
+			toast.error(err.message || "حدث خطأ أثناء إضافة الكورس");
 		},
 	});
 
@@ -75,11 +67,7 @@ export function AddCourseModal({ isOpen, onClose }: AddCourseModalProps) {
 		e.preventDefault();
 
 		if (!formData.name) {
-			toast({
-				variant: "destructive",
-				title: "خطأ في التحقق",
-				description: "اسم الكورس مطلوب",
-			});
+			toast.error("اسم الكورس مطلوب");
 			return;
 		}
 

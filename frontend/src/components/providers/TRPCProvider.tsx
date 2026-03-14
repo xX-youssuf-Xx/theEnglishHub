@@ -13,10 +13,11 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
 			new QueryClient({
 				defaultOptions: {
 					queries: {
-						staleTime: 5 * 60 * 1000,
+						staleTime: 0, // Always fetch fresh data on mount
+						cacheTime: 0, // Don't cache queries
 						retry: 1,
-						refetchOnWindowFocus: false, // Prevent refetch on window focus
-						refetchOnReconnect: false, // Prevent refetch on reconnect
+						refetchOnWindowFocus: false,
+						refetchOnReconnect: true,
 					},
 				},
 			}),

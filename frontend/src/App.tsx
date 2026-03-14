@@ -4,6 +4,7 @@ import {
 	BrowserRouter as Router,
 	Routes,
 } from "react-router-dom";
+import { Toaster } from "sonner";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { TRPCProvider } from "@/components/providers/TRPCProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -117,6 +118,12 @@ function App() {
 				<AuthProvider>
 					<Router>
 						<AppRoutes />
+						<Toaster
+							position="top-center"
+							richColors
+							duration={3000}
+							closeButton
+						/>
 					</Router>
 				</AuthProvider>
 			</ThemeProvider>
