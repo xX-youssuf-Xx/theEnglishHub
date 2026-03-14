@@ -1,5 +1,6 @@
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,12 +62,14 @@ export function EditStudentModal({
 
 	const updateStudent = trpc.students.update.useMutation({
 		onSuccess: () => {
+			toast.success("تم تحديث بيانات الطالب بنجاح");
 			utils.students.getAll.invalidate();
 			onSuccess?.();
 			onOpenChange(false);
 		},
 		onError: (err) => {
 			setError(err.message || "حدث خطأ أثناء تحديث بيانات الطالب");
+			toast.error(err.message || "حدث خطأ أثناء تحديث بيانات الطالب");
 		},
 	});
 

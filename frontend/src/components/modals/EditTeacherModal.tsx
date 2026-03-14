@@ -1,5 +1,6 @@
 import { GraduationCap, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -47,11 +48,15 @@ export function EditTeacherModal({
 
 	const updateMutation = trpc.teachers.update.useMutation({
 		onSuccess: () => {
+			toast.success("تم تحديث بيانات المعلم بنجاح");
 			utils.teachers.getAll.invalidate();
 			if (teacherId) {
 				utils.teachers.getById.invalidate(teacherId);
 			}
 			onClose();
+		},
+		onError: (err) => {
+			toast.error(err.message || "حدث خطأ أثناء تحديث بيانات المعلم");
 		},
 	});
 

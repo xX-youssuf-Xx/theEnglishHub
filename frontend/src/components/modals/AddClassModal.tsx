@@ -1,4 +1,4 @@
-import { GraduationCap, Loader2, Plus, Users, X } from "lucide-react";
+import { Clock, GraduationCap, Loader2, Plus, Users, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -296,25 +296,59 @@ export function AddClassModal({
 										</SelectContent>
 									</Select>
 
-									<Input
-										type="time"
-										value={schedule.startTime}
-										onChange={(e) =>
-											handleScheduleChange(index, "startTime", e.target.value)
-										}
-										className="w-[120px] text-base"
-									/>
+									<div className="relative">
+										<Input
+											type="time"
+											value={schedule.startTime}
+											onChange={(e) =>
+												handleScheduleChange(index, "startTime", e.target.value)
+											}
+											className="w-[140px] text-base pl-10"
+										/>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="absolute left-0 top-0 h-full px-3 hover:bg-transparent"
+											onClick={(e) => {
+												const input =
+													e.currentTarget.parentElement?.querySelector(
+														'input[type="time"]',
+													) as HTMLInputElement;
+												input?.showPicker?.() || input?.click();
+											}}
+										>
+											<Clock className="w-4 h-4 text-text-muted" />
+										</Button>
+									</div>
 
 									<span className="text-text-muted px-1">إلى</span>
 
-									<Input
-										type="time"
-										value={schedule.endTime}
-										onChange={(e) =>
-											handleScheduleChange(index, "endTime", e.target.value)
-										}
-										className="w-[120px] text-base"
-									/>
+									<div className="relative">
+										<Input
+											type="time"
+											value={schedule.endTime}
+											onChange={(e) =>
+												handleScheduleChange(index, "endTime", e.target.value)
+											}
+											className="w-[140px] text-base pl-10"
+										/>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="absolute left-0 top-0 h-full px-3 hover:bg-transparent"
+											onClick={(e) => {
+												const input =
+													e.currentTarget.parentElement?.querySelector(
+														'input[type="time"]',
+													) as HTMLInputElement;
+												input?.showPicker?.() || input?.click();
+											}}
+										>
+											<Clock className="w-4 h-4 text-text-muted" />
+										</Button>
+									</div>
 
 									{formData.schedules.length > 1 && (
 										<Button

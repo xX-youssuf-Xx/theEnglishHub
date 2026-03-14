@@ -1,5 +1,6 @@
 import { GraduationCap, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -28,9 +29,13 @@ export function AddTeacherModal({ isOpen, onClose }: AddTeacherModalProps) {
 
 	const createMutation = trpc.teachers.create.useMutation({
 		onSuccess: () => {
+			toast.success("تم إضافة المعلم بنجاح");
 			utils.teachers.getAll.invalidate();
 			onClose();
 			setFormData({ fullName: "", phone: "", email: "", address: "" });
+		},
+		onError: (err) => {
+			toast.error(err.message || "حدث خطأ أثناء إضافة المعلم");
 		},
 	});
 
