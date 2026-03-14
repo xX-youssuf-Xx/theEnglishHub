@@ -366,6 +366,17 @@ export class CourseService {
         );
       }
 
+      // Create classTeacherPayments record if teacher is assigned
+      if (data.teacherId) {
+        await db.insert(classTeacherPayments).values({
+          classId: newClass.id,
+          teacherId: data.teacherId,
+          paymentAmount: '0',
+          paymentCycle: '4',
+          isActive: true,
+        });
+      }
+
       return {
         id: newClass.publicId,
         name: newClass.name,

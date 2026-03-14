@@ -329,10 +329,10 @@ export function AddClassModal({
 										onChange={(e) =>
 											handleScheduleChange(index, "startTime", e.target.value)
 										}
-										className="w-[100px]"
+										className="w-[120px] text-base"
 									/>
 
-									<span className="text-text-muted">إلى</span>
+									<span className="text-text-muted px-1">إلى</span>
 
 									<Input
 										type="time"
@@ -340,7 +340,7 @@ export function AddClassModal({
 										onChange={(e) =>
 											handleScheduleChange(index, "endTime", e.target.value)
 										}
-										className="w-[100px]"
+										className="w-[120px] text-base"
 									/>
 
 									{formData.schedules.length > 1 && (
