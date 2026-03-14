@@ -299,9 +299,12 @@ export class TeacherService {
         throw new Error('Teacher not found');
       }
 
-      // Get all class assignments for this teacher
+      // Get all active class assignments for this teacher
       const classAssignments = await db.query.classTeacherPayments.findMany({
-        where: eq(classTeacherPayments.teacherId, teacher.id),
+        where: and(
+          eq(classTeacherPayments.teacherId, teacher.id),
+          eq(classTeacherPayments.isActive, true)
+        ),
         with: {
           class: {
             with: {

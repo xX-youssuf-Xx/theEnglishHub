@@ -208,24 +208,28 @@ export function ClassesPage() {
 																	<MoreVertical className="w-4 h-4" />
 																</Button>
 															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
+															<DropdownMenuContent
+																align="end"
+																sideOffset={8}
+																className="min-w-[160px]"
+															>
 																<DropdownMenuItem
 																	onClick={() => handleView(cls.id)}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>عرض التفاصيل</span>
 																	<Eye className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() => handleEdit(cls.id)}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>تعديل</span>
 																	<Edit className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() => handleDelete(cls.id, cls.name)}
-																	className="flex justify-end gap-3 text-error"
+																	className="flex justify-end gap-1.5 text-error"
 																>
 																	<span>حذف</span>
 																	<Trash2 className="w-4 h-4" />

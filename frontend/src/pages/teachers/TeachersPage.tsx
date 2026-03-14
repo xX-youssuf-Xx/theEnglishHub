@@ -212,10 +212,14 @@ export function TeachersPage() {
 																	<MoreVertical className="w-4 h-4" />
 																</Button>
 															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
+															<DropdownMenuContent
+																align="end"
+																sideOffset={8}
+																className="min-w-[160px]"
+															>
 																<DropdownMenuItem
 																	onClick={() => handleView(teacher.id)}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>عرض التفاصيل</span>
 																	<Eye className="w-4 h-4" />
@@ -227,14 +231,14 @@ export function TeachersPage() {
 																			teacher.fullName,
 																		)
 																	}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>إدارة الكلاسات</span>
 																	<CalendarDays className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() => handleEdit(teacher.id)}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>تعديل</span>
 																	<Edit className="w-4 h-4" />
@@ -243,7 +247,7 @@ export function TeachersPage() {
 																	onClick={() =>
 																		handleDelete(teacher.id, teacher.fullName)
 																	}
-																	className="text-error flex justify-end gap-3"
+																	className="text-error flex justify-end gap-1.5"
 																>
 																	<span>حذف</span>
 																	<Trash2 className="w-4 h-4" />

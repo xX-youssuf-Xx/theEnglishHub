@@ -264,12 +264,16 @@ export function CoursesPage() {
 																	<MoreVertical className="w-4 h-4" />
 																</Button>
 															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
+															<DropdownMenuContent
+																align="end"
+																sideOffset={8}
+																className="min-w-[160px]"
+															>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleView(course.id, course.name)
 																	}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>عرض التفاصيل</span>
 																	<Eye className="w-4 h-4" />
@@ -278,7 +282,7 @@ export function CoursesPage() {
 																	onClick={() =>
 																		handleViewClasses(course.id, course.name)
 																	}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>عرض الكلاسات</span>
 																	<GraduationCap className="w-4 h-4" />
@@ -287,7 +291,7 @@ export function CoursesPage() {
 																	onClick={() =>
 																		handleAddLevel(course.id, course.name)
 																	}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>إضافة مستوى</span>
 																	<Layers className="w-4 h-4" />
@@ -296,7 +300,7 @@ export function CoursesPage() {
 																	onClick={() =>
 																		handleEdit(course.id, course.name)
 																	}
-																	className="flex justify-end gap-3"
+																	className="flex justify-end gap-1.5"
 																>
 																	<span>تعديل</span>
 																	<Edit className="w-4 h-4" />
@@ -305,7 +309,7 @@ export function CoursesPage() {
 																	onClick={() =>
 																		handleDelete(course.id, course.name)
 																	}
-																	className="flex justify-end gap-3 text-error"
+																	className="flex justify-end gap-1.5 text-error"
 																>
 																	<span>حذف</span>
 																	<Trash2 className="w-4 h-4" />
