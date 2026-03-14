@@ -376,15 +376,21 @@ export function CalendarPage() {
 																					<MoreVertical className="w-3 h-3" />
 																				</Button>
 																			</DropdownMenuTrigger>
-																			<DropdownMenuContent align="end">
+																			<DropdownMenuContent
+																				align="start"
+																				side="bottom"
+																				sideOffset={8}
+																				className="min-w-[160px]"
+																			>
 																				<DropdownMenuItem
 																					onClick={(e) => {
 																						e.stopPropagation();
 																						handleMarkComplete(session.id);
 																					}}
+																					className="flex justify-end gap-1.5"
 																				>
-																					<CheckCircle className="w-4 h-4 ml-2" />
-																					تحديد كمكتملة
+																					<span>تحديد كمكتملة</span>
+																					<CheckCircle className="w-4 h-4" />
 																				</DropdownMenuItem>
 																			</DropdownMenuContent>
 																		</DropdownMenu>

@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { courses, courseLevels, books, levelPrerequisites, studentEnrollments, classes, classSchedules, coursePrerequisites, teachers } from '../db/schema';
+import { courses, courseLevels, books, levelPrerequisites, studentEnrollments, classes, classSchedules, coursePrerequisites, teachers, classTeacherPayments } from '../db/schema';
 import { eq, like, desc, count } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 

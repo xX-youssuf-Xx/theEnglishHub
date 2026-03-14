@@ -243,7 +243,8 @@ export function StudentsPage() {
 																</Button>
 															</DropdownMenuTrigger>
 															<DropdownMenuContent
-																align="end"
+																align="start"
+																side="bottom"
 																sideOffset={8}
 																className="min-w-[160px]"
 															>
