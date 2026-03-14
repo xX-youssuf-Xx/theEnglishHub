@@ -303,23 +303,11 @@ export function AddClassModal({
 											onChange={(e) =>
 												handleScheduleChange(index, "startTime", e.target.value)
 											}
-											className="w-[140px] text-base pl-10"
+											className="w-[140px] text-base pl-10 cursor-pointer"
 										/>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="absolute left-0 top-0 h-full px-3 hover:bg-transparent"
-											onClick={(e) => {
-												const input =
-													e.currentTarget.parentElement?.querySelector(
-														'input[type="time"]',
-													) as HTMLInputElement;
-												input?.showPicker?.() || input?.click();
-											}}
-										>
+										<div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
 											<Clock className="w-4 h-4 text-text-muted" />
-										</Button>
+										</div>
 									</div>
 
 									<span className="text-text-muted px-1">إلى</span>
@@ -331,23 +319,11 @@ export function AddClassModal({
 											onChange={(e) =>
 												handleScheduleChange(index, "endTime", e.target.value)
 											}
-											className="w-[140px] text-base pl-10"
+											className="w-[140px] text-base pl-10 cursor-pointer"
 										/>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="absolute left-0 top-0 h-full px-3 hover:bg-transparent"
-											onClick={(e) => {
-												const input =
-													e.currentTarget.parentElement?.querySelector(
-														'input[type="time"]',
-													) as HTMLInputElement;
-												input?.showPicker?.() || input?.click();
-											}}
-										>
+										<div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
 											<Clock className="w-4 h-4 text-text-muted" />
-										</Button>
+										</div>
 									</div>
 
 									{formData.schedules.length > 1 && (
