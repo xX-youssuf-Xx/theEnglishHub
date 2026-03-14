@@ -71,7 +71,9 @@ export function ViewCourseClassesModal({
 	const deleteClassMutation = trpc.courses.deleteClass.useMutation({
 		onSuccess: () => {
 			utils.courses.getClasses.invalidate(courseId || "");
-			toast.success("تم حذف الكلاس بنجاح");
+			// Invalidate calendar queries to reflect deleted sessions
+			utils.sessions.getWeeklySchedule.invalidate();
+			toast.success("تم حذف الكلاس وجميع حصصه بنجاح");
 		},
 		onError: (err) => {
 			toast.error(err.message || "حدث خطأ أثناء الحذف");

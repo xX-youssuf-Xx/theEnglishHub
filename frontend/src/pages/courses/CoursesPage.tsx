@@ -72,9 +72,11 @@ export function CoursesPage() {
 
 	const deleteMutation = trpc.courses.delete.useMutation({
 		onSuccess: () => {
-			toast.success("تم حذف الكورس بنجاح");
+			toast.success("تم حذف الكورس وجميع كلاساته وحصصه بنجاح");
 			// Invalidate and refetch courses
 			utils.courses.getAll.invalidate();
+			// Invalidate calendar to reflect deleted sessions
+			utils.sessions.getWeeklySchedule.invalidate();
 			setIsDeleteModalOpen(false);
 			setSelectedCourseId(null);
 			setSelectedCourseName("");

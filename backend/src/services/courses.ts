@@ -1,6 +1,6 @@
 import { db } from '../db';
-import { courses, courseLevels, books, levelPrerequisites, studentEnrollments, classes, classSchedules, coursePrerequisites, teachers, classTeacherPayments } from '../db/schema';
-import { eq, like, desc, count } from 'drizzle-orm';
+import { courses, courseLevels, books, levelPrerequisites, studentEnrollments, classes, classSchedules, coursePrerequisites, teachers, classTeacherPayments, sessions } from '../db/schema';
+import { eq, like, desc, count, inArray } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 
 export class CourseService {
@@ -198,11 +198,29 @@ export class CourseService {
         throw new Error('Course not found');
       }
 
+      // Get all classes for this course
+      const courseClasses = await db.query.classes.findMany({
+        where: eq(classes.courseId, course.id),
+      });
+
+      // Delete all sessions for all classes in this course
+      if (courseClasses.length > 0) {
+        const classIds = courseClasses.map(c => c.id);
+        await db.delete(sessions)
+          .where(inArray(sessions.classId, classIds));
+
+        // Soft-delete all classes
+        await db.update(classes)
+          .set({ isActive: false, updatedAt: new Date() })
+          .where(inArray(classes.id, classIds));
+      }
+
+      // Soft-delete the course
       await db.update(courses)
         .set({ isActive: false, updatedAt: new Date() })
         .where(eq(courses.id, course.id));
 
-      return { message: 'Course deleted successfully' };
+      return { message: 'Course and associated classes/sessions deleted successfully' };
     } catch (error) {
       logger.error('Delete course error:', error);
       throw error;
@@ -438,11 +456,15 @@ export class CourseService {
         throw new Error('Class not found');
       }
 
+      // Delete all sessions associated with this class
+      await db.delete(sessions)
+        .where(eq(sessions.classId, cls.id));
+
       await db.update(classes)
         .set({ isActive: false, updatedAt: new Date() })
         .where(eq(classes.id, cls.id));
 
-      return { message: 'Class deleted successfully' };
+      return { message: 'Class and associated sessions deleted successfully' };
     } catch (error) {
       logger.error('Delete class error:', error);
       throw error;

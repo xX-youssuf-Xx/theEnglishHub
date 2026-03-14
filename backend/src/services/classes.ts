@@ -280,6 +280,10 @@ export class ClassService {
         throw new Error('Class not found');
       }
 
+      // Delete all sessions associated with this class
+      await db.delete(sessions)
+        .where(eq(sessions.classId, classData.id));
+
       await db.update(classes)
         .set({ isActive: false, updatedAt: new Date() })
         .where(eq(classes.id, classData.id));
