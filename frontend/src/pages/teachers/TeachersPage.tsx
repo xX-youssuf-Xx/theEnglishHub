@@ -215,9 +215,10 @@ export function TeachersPage() {
 															<DropdownMenuContent align="end">
 																<DropdownMenuItem
 																	onClick={() => handleView(teacher.id)}
+																	className="flex justify-end gap-3"
 																>
-																	<Eye className="w-4 h-4 ml-2" />
-																	عرض التفاصيل
+																	<span>عرض التفاصيل</span>
+																	<Eye className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
@@ -226,24 +227,26 @@ export function TeachersPage() {
 																			teacher.fullName,
 																		)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<CalendarDays className="w-4 h-4 ml-2" />
-																	إدارة الكلاسات
+																	<span>إدارة الكلاسات</span>
+																	<CalendarDays className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() => handleEdit(teacher.id)}
+																	className="flex justify-end gap-3"
 																>
-																	<Edit className="w-4 h-4 ml-2" />
-																	تعديل
+																	<span>تعديل</span>
+																	<Edit className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleDelete(teacher.id, teacher.fullName)
 																	}
-																	className="text-error"
+																	className="text-error flex justify-end gap-3"
 																>
-																	<Trash2 className="w-4 h-4 ml-2" />
-																	حذف
+																	<span>حذف</span>
+																	<Trash2 className="w-4 h-4" />
 																</DropdownMenuItem>
 															</DropdownMenuContent>
 														</DropdownMenu>

@@ -266,11 +266,20 @@ export class TeacherService {
         throw new Error('Teacher not found');
       }
 
-      await db.insert(classTeacherPayments).values({
-        teacherId: teacher.id,
-        classId: data.classId,
-        paymentAmount: data.paymentAmount.toString(),
-        paymentCycle: data.paymentCycle,
+      // Start a transaction to ensure both operations succeed or fail together
+      await db.transaction(async (tx) => {
+        // Insert into classTeacherPayments
+        await tx.insert(classTeacherPayments).values({
+          teacherId: teacher.id,
+          classId: data.classId,
+          paymentAmount: data.paymentAmount.toString(),
+          paymentCycle: data.paymentCycle,
+        });
+
+        // Also update the class's teacherId
+        await tx.update(classes)
+          .set({ teacherId: teacher.id, updatedAt: new Date() })
+          .where(eq(classes.id, data.classId));
       });
 
       return { message: 'Teacher assigned to class successfully' };
@@ -362,13 +371,22 @@ export class TeacherService {
         throw new Error('Class not found');
       }
 
-      await db.delete(classTeacherPayments)
-        .where(
-          and(
-            eq(classTeacherPayments.teacherId, teacher.id),
-            eq(classTeacherPayments.classId, classData.id)
-          )
-        );
+      // Start a transaction to ensure both operations succeed or fail together
+      await db.transaction(async (tx) => {
+        // Delete from classTeacherPayments
+        await tx.delete(classTeacherPayments)
+          .where(
+            and(
+              eq(classTeacherPayments.teacherId, teacher.id),
+              eq(classTeacherPayments.classId, classData.id)
+            )
+          );
+
+        // Also clear the class's teacherId
+        await tx.update(classes)
+          .set({ teacherId: null, updatedAt: new Date() })
+          .where(eq(classes.id, classData.id));
+      });
 
       return { message: 'Teacher removed from class successfully' };
     } catch (error) {

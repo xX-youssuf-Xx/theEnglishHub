@@ -211,22 +211,24 @@ export function ClassesPage() {
 															<DropdownMenuContent align="end">
 																<DropdownMenuItem
 																	onClick={() => handleView(cls.id)}
+																	className="flex justify-end gap-3"
 																>
-																	<Eye className="w-4 h-4 ml-2" />
-																	عرض التفاصيل
+																	<span>عرض التفاصيل</span>
+																	<Eye className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() => handleEdit(cls.id)}
+																	className="flex justify-end gap-3"
 																>
-																	<Edit className="w-4 h-4 ml-2" />
-																	تعديل
+																	<span>تعديل</span>
+																	<Edit className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() => handleDelete(cls.id, cls.name)}
-																	className="text-error"
+																	className="flex justify-end gap-3 text-error"
 																>
-																	<Trash2 className="w-4 h-4 ml-2" />
-																	حذف
+																	<span>حذف</span>
+																	<Trash2 className="w-4 h-4" />
 																</DropdownMenuItem>
 															</DropdownMenuContent>
 														</DropdownMenu>

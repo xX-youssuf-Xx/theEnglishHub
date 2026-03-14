@@ -245,25 +245,28 @@ export function StudentsPage() {
 															<DropdownMenuContent align="end">
 																<DropdownMenuItem
 																	onClick={() => handleView(student.id)}
+																	className="flex justify-end gap-3"
 																>
-																	<Eye className="w-4 h-4 ml-2" />
-																	عرض التفاصيل
+																	<span>عرض التفاصيل</span>
+																	<Eye className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleEdit(student.id, student.fullName)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<Edit className="w-4 h-4 ml-2" />
-																	تعديل
+																	<span>تعديل</span>
+																	<Edit className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleEnroll(student.id, student.fullName)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<GraduationCap className="w-4 h-4 ml-2" />
-																	تسجيل في كورس
+																	<span>تسجيل في كورس</span>
+																	<GraduationCap className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
@@ -272,18 +275,19 @@ export function StudentsPage() {
 																			student.fullName,
 																		)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<Wallet className="w-4 h-4 ml-2" />
-																	تسجيل الدفع
+																	<span>تسجيل الدفع</span>
+																	<Wallet className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
-																	className="text-error"
 																	onClick={() =>
 																		handleDelete(student.id, student.fullName)
 																	}
+																	className="flex justify-end gap-3 text-error"
 																>
-																	<Trash2 className="w-4 h-4 ml-2" />
-																	حذف
+																	<span>حذف</span>
+																	<Trash2 className="w-4 h-4" />
 																</DropdownMenuItem>
 															</DropdownMenuContent>
 														</DropdownMenu>

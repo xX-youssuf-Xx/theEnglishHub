@@ -269,42 +269,46 @@ export function CoursesPage() {
 																	onClick={() =>
 																		handleView(course.id, course.name)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<Eye className="w-4 h-4 ml-2" />
-																	عرض التفاصيل
+																	<span>عرض التفاصيل</span>
+																	<Eye className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleViewClasses(course.id, course.name)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<GraduationCap className="w-4 h-4 ml-2" />
-																	عرض الكلاسات
+																	<span>عرض الكلاسات</span>
+																	<GraduationCap className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleAddLevel(course.id, course.name)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<Layers className="w-4 h-4 ml-2" />
-																	إضافة مستوى
+																	<span>إضافة مستوى</span>
+																	<Layers className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleEdit(course.id, course.name)
 																	}
+																	className="flex justify-end gap-3"
 																>
-																	<Edit className="w-4 h-4 ml-2" />
-																	تعديل
+																	<span>تعديل</span>
+																	<Edit className="w-4 h-4" />
 																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleDelete(course.id, course.name)
 																	}
-																	className="text-error"
+																	className="flex justify-end gap-3 text-error"
 																>
-																	<Trash2 className="w-4 h-4 ml-2" />
-																	حذف
+																	<span>حذف</span>
+																	<Trash2 className="w-4 h-4" />
 																</DropdownMenuItem>
 															</DropdownMenuContent>
 														</DropdownMenu>
