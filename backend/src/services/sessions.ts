@@ -410,9 +410,13 @@ export class SessionService {
         },
       });
 
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 14); // 2 weeks ahead
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      
+      // Calculate start and end of current month
+      const monthStart = new Date(currentYear, currentMonth, 1);
+      const monthEnd = new Date(currentYear, currentMonth + 1, 0); // Last day of month
 
       let totalSessionsCreated = 0;
       const results = [];
@@ -422,38 +426,28 @@ export class SessionService {
           continue;
         }
 
-        // Get the last session date for this class
-        const lastSession = await db.query.sessions.findFirst({
-          where: eq(sessions.classId, classData.id),
-          orderBy: desc(sessions.sessionDate),
-        });
-
         const sessionsToCreate = [];
-        let currentDate = lastSession 
-          ? new Date(lastSession.sessionDate)
-          : new Date(startDate);
-        
-        // Start from the day after the last session
-        if (lastSession) {
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
+        let currentDate = new Date(monthStart);
 
-        // Generate sessions until we have 2 weeks worth
-        while (currentDate <= endDate) {
+        // Generate sessions for every day in the current month
+        while (currentDate <= monthEnd) {
           const dayOfWeek = currentDate.getDay();
           
           // Find if there's a schedule for this day
           const schedule = classData.schedules.find(s => s.dayOfWeek === dayOfWeek && s.isActive);
           
           if (schedule) {
-            // Check if session already exists
+            const dateStr = currentDate.toISOString().split('T')[0];
+            
+            // Check if session already exists for this date (preserves completed sessions)
             const existingSession = await db.query.sessions.findFirst({
               where: and(
                 eq(sessions.classId, classData.id),
-                eq(sessions.sessionDate, currentDate.toISOString().split('T')[0])
+                eq(sessions.sessionDate, dateStr)
               ),
             });
 
+            // Only create if no session exists (regardless of status)
             if (!existingSession) {
               sessionsToCreate.push({
                 classId: classData.id,
@@ -481,9 +475,10 @@ export class SessionService {
       }
 
       return {
-        message: `Generated ${totalSessionsCreated} sessions for ${results.length} classes`,
+        message: `Generated ${totalSessionsCreated} sessions for ${results.length} classes for ${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`,
         totalSessionsCreated,
         classesProcessed: results.length,
+        month: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`,
         details: results,
       };
     } catch (error) {
