@@ -1,559 +1,780 @@
-import { db } from '../db';
-import { sessions, studentSessionAttendance, studentEnrollments, studentPayments, classTeacherPayments, teacherPayments, classes, courses, students, courseLevels } from '../db/schema';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
-import { logger } from '../utils/logger';
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { db } from "../db";
+import {
+	classes,
+	classTeacherPayments,
+	courseLevels,
+	courses,
+	sessions,
+	studentEnrollments,
+	studentPayments,
+	studentSessionAttendance,
+	students,
+	teacherPayments,
+} from "../db/schema";
+import { logger } from "../utils/logger";
 
 export class SessionService {
-  async getWeeklySchedule(startDate: Date, endDate: Date) {
-    try {
-      // Get all sessions in the date range
-      const sessionsData = await db.query.sessions.findMany({
-        where: and(
-          gte(sessions.sessionDate, startDate),
-          lte(sessions.sessionDate, endDate)
-        ),
-        with: {
-          class: {
-            with: {
-              course: true,
-              level: true,
-              teacherPayments: {
-                with: {
-                  teacher: true,
-                },
-              },
-            },
-          },
-          attendance: {
-            with: {
-              student: true,
-            },
-          },
-        },
-        orderBy: [sessions.sessionDate, sessions.startTime],
-      });
+	async getWeeklySchedule(startDate: Date, endDate: Date) {
+		try {
+			// Get all sessions in the date range
+			const sessionsData = await db.query.sessions.findMany({
+				where: and(
+					gte(sessions.sessionDate, startDate),
+					lte(sessions.sessionDate, endDate),
+				),
+				with: {
+					class: {
+						with: {
+							course: true,
+							level: true,
+							teacherPayments: {
+								with: {
+									teacher: true,
+								},
+							},
+						},
+					},
+					attendance: {
+						with: {
+							student: true,
+						},
+					},
+				},
+				orderBy: [sessions.sessionDate, sessions.startTime],
+			});
 
-      // Group by day of week
-      const scheduleByDay = [0, 1, 2, 3, 4, 5, 6].map(day => ({
-        dayOfWeek: day,
-        sessions: [] as any[],
-      }));
+			// Group by day of week
+			const scheduleByDay = [0, 1, 2, 3, 4, 5, 6].map((day) => ({
+				dayOfWeek: day,
+				sessions: [] as any[],
+			}));
 
-      sessionsData.forEach(session => {
-        const dayOfWeek = new Date(session.sessionDate).getDay();
-        scheduleByDay[dayOfWeek].sessions.push({
-          id: session.publicId,
-          date: session.sessionDate,
-          startTime: session.startTime,
-          endTime: session.endTime,
-          status: session.status,
-          class: {
-            id: session.class.publicId,
-            name: session.class.name,
-            course: session.class.course?.name,
-            level: session.class.level?.levelNumber,
-          },
-          teacher: session.class.teacherPayments?.[0]?.teacher ? {
-            id: session.class.teacherPayments[0].teacher.publicId,
-            fullName: session.class.teacherPayments[0].teacher.fullName,
-          } : null,
-          attendanceCount: session.attendance?.filter(a => a.attended).length || 0,
-          totalStudents: session.attendance?.length || 0,
-        });
-      });
+			sessionsData.forEach((session) => {
+				const dayOfWeek = new Date(session.sessionDate).getDay();
+				scheduleByDay[dayOfWeek].sessions.push({
+					id: session.publicId,
+					date: session.sessionDate,
+					startTime: session.startTime,
+					endTime: session.endTime,
+					status: session.status,
+					class: {
+						id: session.class.publicId,
+						name: session.class.name,
+						course: session.class.course?.name,
+						level: session.class.level?.levelNumber,
+					},
+					teacher: session.class.teacherPayments?.[0]?.teacher
+						? {
+								id: session.class.teacherPayments[0].teacher.publicId,
+								fullName: session.class.teacherPayments[0].teacher.fullName,
+							}
+						: null,
+					attendanceCount:
+						session.attendance?.filter((a) => a.attended).length || 0,
+					totalStudents: session.attendance?.length || 0,
+				});
+			});
 
-      return scheduleByDay;
-    } catch (error) {
-      logger.error('Get weekly schedule error:', error);
-      throw error;
-    }
-  }
+			return scheduleByDay;
+		} catch (error) {
+			logger.error("Get weekly schedule error:", error);
+			throw error;
+		}
+	}
 
-  async markSessionComplete(sessionPublicId: string, userId: number) {
-    try {
-      const session = await db.query.sessions.findFirst({
-        where: eq(sessions.publicId, sessionPublicId),
-        with: {
-          class: {
-            with: {
-              course: true,
-              level: true,
-              teacherPayments: {
-                with: {
-                  teacher: true,
-                },
-              },
-              students: {
-                where: eq(students.isActive, true),
-              },
-            },
-          },
-          attendance: true,
-        },
-      });
+	async markSessionComplete(sessionPublicId: string, userId: number) {
+		try {
+			const session = await db.query.sessions.findFirst({
+				where: eq(sessions.publicId, sessionPublicId),
+				with: {
+					class: {
+						with: {
+							course: true,
+							level: true,
+							teacherPayments: {
+								with: {
+									teacher: true,
+								},
+							},
+							students: {
+								where: eq(students.isActive, true),
+							},
+						},
+					},
+					attendance: true,
+				},
+			});
 
-      if (!session) {
-        throw new Error('Session not found');
-      }
+			if (!session) {
+				throw new Error("Session not found");
+			}
 
-      if (session.status === 'completed') {
-        throw new Error('Session is already marked as completed');
-      }
+			if (session.status === "completed") {
+				throw new Error("Session is already marked as completed");
+			}
 
-      // Mark session as completed
-      await db.update(sessions)
-        .set({
-          status: 'completed',
-          completedAt: new Date(),
-          completedBy: userId,
-          updatedAt: new Date(),
-        })
-        .where(eq(sessions.id, session.id));
+			// Mark session as completed
+			await db
+				.update(sessions)
+				.set({
+					status: "completed",
+					completedAt: new Date(),
+					completedBy: userId,
+					updatedAt: new Date(),
+				})
+				.where(eq(sessions.id, session.id));
 
-      // Update attendance for all students
-      if (session.attendance && session.attendance.length > 0) {
-        for (const attendance of session.attendance) {
-          await db.update(studentSessionAttendance)
-            .set({
-              attended: true,
-              updatedAt: new Date(),
-            })
-            .where(eq(studentSessionAttendance.id, attendance.id));
-        }
-      }
+			// Update attendance for all students
+			if (session.attendance && session.attendance.length > 0) {
+				for (const attendance of session.attendance) {
+					await db
+						.update(studentSessionAttendance)
+						.set({
+							attended: true,
+							updatedAt: new Date(),
+						})
+						.where(eq(studentSessionAttendance.id, attendance.id));
+				}
+			}
 
-      // Calculate financial impact
-      const course = session.class.course;
-      const level = session.class.level;
-      const sessionsPerMonth = course?.sessionsPerMonth || 4;
+			// Calculate financial impact
+			const course = session.class.course;
+			const level = session.class.level;
+			const sessionsPerMonth = course?.sessionsPerMonth || 4;
 
-      // Check if this session completes a payment cycle for students
-      const completedSessions = await db.select({ count: sql`count(*)`.as('count') })
-        .from(sessions)
-        .where(
-          and(
-            eq(sessions.classId, session.class.id),
-            eq(sessions.status, 'completed')
-          )
-        );
+			// Check if this session completes a payment cycle for students
+			const completedSessions = await db
+				.select({ count: sql`count(*)`.as("count") })
+				.from(sessions)
+				.where(
+					and(
+						eq(sessions.classId, session.class.id),
+						eq(sessions.status, "completed"),
+					),
+				);
 
-      const totalCompletedSessions = Number(completedSessions[0]?.count) || 0;
-      const isPaymentCycleComplete = totalCompletedSessions % sessionsPerMonth === 0;
-      const cycleNumber = Math.ceil(totalCompletedSessions / sessionsPerMonth);
+			const totalCompletedSessions = Number(completedSessions[0]?.count) || 0;
+			const isPaymentCycleComplete =
+				totalCompletedSessions % sessionsPerMonth === 0;
+			const cycleNumber = Math.ceil(totalCompletedSessions / sessionsPerMonth);
 
-      let autoGeneratedPayments = {
-        students: 0,
-        teachers: 0,
-      };
+			const autoGeneratedPayments = {
+				students: 0,
+				teachers: 0,
+			};
 
-      // If payment cycle is complete, create pending payment records
-      if (isPaymentCycleComplete) {
-        // Create pending payments for all students in the class
-        if (session.class.students && session.class.students.length > 0 && level) {
-          const pricePerMonth = level.pricePerMonth || '0';
-          
-          for (const student of session.class.students) {
-            // Check if pending payment already exists for this cycle
-            const existingPayment = await db.query.studentPayments.findFirst({
-              where: and(
-                eq(studentPayments.studentId, student.id),
-                eq(studentPayments.classId, session.class.id),
-                eq(studentPayments.cycleNumber, cycleNumber),
-                eq(studentPayments.autoGenerated, true)
-              ),
-            });
+			// If payment cycle is complete, create pending payment records
+			if (isPaymentCycleComplete) {
+				// Create pending payments for all students in the class
+				if (
+					session.class.students &&
+					session.class.students.length > 0 &&
+					level
+				) {
+					const pricePerMonth = level.pricePerMonth || "0";
 
-            if (!existingPayment) {
-              await db.insert(studentPayments).values({
-                studentId: student.id,
-                classId: session.class.id,
-                courseId: session.class.courseId,
-                paymentType: 'tuition',
-                amount: pricePerMonth,
-                sessionsCovered: sessionsPerMonth,
-                status: 'pending',
-                autoGenerated: true,
-                cycleNumber: cycleNumber,
-                notes: `دفعة شهرية تلقائية - دورة ${cycleNumber}`,
-              });
-              autoGeneratedPayments.students++;
-            }
-          }
-        }
+					for (const student of session.class.students) {
+						// Check if pending payment already exists for this cycle
+						const existingPayment = await db.query.studentPayments.findFirst({
+							where: and(
+								eq(studentPayments.studentId, student.id),
+								eq(studentPayments.classId, session.class.id),
+								eq(studentPayments.cycleNumber, cycleNumber),
+								eq(studentPayments.autoGenerated, true),
+							),
+						});
 
-        // Create pending payment for teacher
-        if (session.class.teacherPayments && session.class.teacherPayments.length > 0) {
-          for (const teacherPayment of session.class.teacherPayments) {
-            if (teacherPayment.teacherId && teacherPayment.isActive) {
-              // Check if pending payment already exists for this cycle
-              const existingTeacherPayment = await db.query.teacherPayments.findFirst({
-                where: and(
-                  eq(teacherPayments.teacherId, teacherPayment.teacherId),
-                  eq(teacherPayments.classId, session.class.id),
-                  eq(teacherPayments.cycleNumber, cycleNumber),
-                  eq(teacherPayments.autoGenerated, true)
-                ),
-              });
+						if (!existingPayment) {
+							await db.insert(studentPayments).values({
+								studentId: student.id,
+								classId: session.class.id,
+								courseId: session.class.courseId,
+								paymentType: "tuition",
+								amount: pricePerMonth,
+								sessionsCovered: sessionsPerMonth,
+								status: "pending",
+								autoGenerated: true,
+								cycleNumber: cycleNumber,
+								notes: `دفعة شهرية تلقائية - دورة ${cycleNumber}`,
+							});
+							autoGeneratedPayments.students++;
+						}
+					}
+				}
 
-              if (!existingTeacherPayment) {
-                await db.insert(teacherPayments).values({
-                  teacherId: teacherPayment.teacherId,
-                  classId: session.class.id,
-                  amount: teacherPayment.paymentAmount,
-                  sessionsCovered: sessionsPerMonth,
-                  status: 'pending',
-                  autoGenerated: true,
-                  cycleNumber: cycleNumber,
-                  notes: `دفعة شهرية تلقائية - دورة ${cycleNumber}`,
-                });
-                autoGeneratedPayments.teachers++;
-              }
-            }
-          }
-        }
-      }
+				// Create pending payment for teacher
+				if (
+					session.class.teacherPayments &&
+					session.class.teacherPayments.length > 0
+				) {
+					for (const teacherPayment of session.class.teacherPayments) {
+						if (teacherPayment.teacherId && teacherPayment.isActive) {
+							// Check if pending payment already exists for this cycle
+							const existingTeacherPayment =
+								await db.query.teacherPayments.findFirst({
+									where: and(
+										eq(teacherPayments.teacherId, teacherPayment.teacherId),
+										eq(teacherPayments.classId, session.class.id),
+										eq(teacherPayments.cycleNumber, cycleNumber),
+										eq(teacherPayments.autoGenerated, true),
+									),
+								});
 
-      return {
-        message: 'Session marked as completed',
-        sessionId: session.publicId,
-        isPaymentCycleComplete,
-        sessionsCompletedInCycle: totalCompletedSessions % sessionsPerMonth || sessionsPerMonth,
-        autoGeneratedPayments,
-      };
-    } catch (error) {
-      logger.error('Mark session complete error:', error);
-      throw error;
-    }
-  }
+							if (!existingTeacherPayment) {
+								await db.insert(teacherPayments).values({
+									teacherId: teacherPayment.teacherId,
+									classId: session.class.id,
+									amount: teacherPayment.paymentAmount,
+									sessionsCovered: sessionsPerMonth,
+									status: "pending",
+									autoGenerated: true,
+									cycleNumber: cycleNumber,
+									notes: `دفعة شهرية تلقائية - دورة ${cycleNumber}`,
+								});
+								autoGeneratedPayments.teachers++;
+							}
+						}
+					}
+				}
+			}
 
-  async markStudentAttendance(sessionPublicId: string, studentPublicId: string, attended: boolean) {
-    try {
-      const session = await db.query.sessions.findFirst({
-        where: eq(sessions.publicId, sessionPublicId),
-      });
+			return {
+				message: "Session marked as completed",
+				sessionId: session.publicId,
+				isPaymentCycleComplete,
+				sessionsCompletedInCycle:
+					totalCompletedSessions % sessionsPerMonth || sessionsPerMonth,
+				autoGeneratedPayments,
+			};
+		} catch (error) {
+			logger.error("Mark session complete error:", error);
+			throw error;
+		}
+	}
 
-      if (!session) {
-        throw new Error('Session not found');
-      }
+	async markStudentAttendance(
+		sessionPublicId: string,
+		studentPublicId: string,
+		attended: boolean,
+	) {
+		try {
+			const session = await db.query.sessions.findFirst({
+				where: eq(sessions.publicId, sessionPublicId),
+			});
 
-      const student = await db.query.students.findFirst({
-        where: eq(students.publicId, studentPublicId),
-      });
+			if (!session) {
+				throw new Error("Session not found");
+			}
 
-      if (!student) {
-        throw new Error('Student not found');
-      }
+			const student = await db.query.students.findFirst({
+				where: eq(students.publicId, studentPublicId),
+			});
 
-      // Check if attendance record exists
-      const existingAttendance = await db.query.studentSessionAttendance.findFirst({
-        where: and(
-          eq(studentSessionAttendance.sessionId, session.id),
-          eq(studentSessionAttendance.studentId, student.id)
-        ),
-      });
+			if (!student) {
+				throw new Error("Student not found");
+			}
 
-      if (existingAttendance) {
-        await db.update(studentSessionAttendance)
-          .set({
-            attended,
-            updatedAt: new Date(),
-          })
-          .where(eq(studentSessionAttendance.id, existingAttendance.id));
-      } else {
-        await db.insert(studentSessionAttendance).values({
-          sessionId: session.id,
-          studentId: student.id,
-          attended,
-        });
-      }
+			// Check if attendance record exists
+			const existingAttendance =
+				await db.query.studentSessionAttendance.findFirst({
+					where: and(
+						eq(studentSessionAttendance.sessionId, session.id),
+						eq(studentSessionAttendance.studentId, student.id),
+					),
+				});
 
-      return { message: 'Attendance marked successfully' };
-    } catch (error) {
-      logger.error('Mark attendance error:', error);
-      throw error;
-    }
-  }
+			if (existingAttendance) {
+				await db
+					.update(studentSessionAttendance)
+					.set({
+						attended,
+						updatedAt: new Date(),
+					})
+					.where(eq(studentSessionAttendance.id, existingAttendance.id));
+			} else {
+				await db.insert(studentSessionAttendance).values({
+					sessionId: session.id,
+					studentId: student.id,
+					attended,
+				});
+			}
 
-  async createSessionsForClass(classPublicId: string, startDate: Date, numberOfSessions: number) {
-    try {
-      const classData = await db.query.classes.findFirst({
-        where: eq(classes.publicId, classPublicId),
-        with: {
-          schedules: true,
-        },
-      });
+			return { message: "Attendance marked successfully" };
+		} catch (error) {
+			logger.error("Mark attendance error:", error);
+			throw error;
+		}
+	}
 
-      if (!classData) {
-        throw new Error('Class not found');
-      }
+	async createSessionsForClass(
+		classPublicId: string,
+		startDate: Date,
+		numberOfSessions: number,
+	) {
+		try {
+			const classData = await db.query.classes.findFirst({
+				where: eq(classes.publicId, classPublicId),
+				with: {
+					schedules: true,
+				},
+			});
 
-      if (!classData.schedules || classData.schedules.length === 0) {
-        throw new Error('Class has no schedules defined');
-      }
+			if (!classData) {
+				throw new Error("Class not found");
+			}
 
-      const sessionsToCreate = [];
-      let currentDate = new Date(startDate);
-      let sessionsCreated = 0;
+			if (!classData.schedules || classData.schedules.length === 0) {
+				throw new Error("Class has no schedules defined");
+			}
 
-      while (sessionsCreated < numberOfSessions) {
-        const dayOfWeek = currentDate.getDay();
-        
-        // Find if there's a schedule for this day
-        const schedule = classData.schedules.find(s => s.dayOfWeek === dayOfWeek && s.isActive);
-        
-        if (schedule) {
-          sessionsToCreate.push({
-            classId: classData.id,
-            sessionDate: new Date(currentDate),
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
-            status: 'scheduled',
-          });
-          sessionsCreated++;
-        }
+			const sessionsToCreate = [];
+			const currentDate = new Date(startDate);
+			let sessionsCreated = 0;
 
-        // Move to next day
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
+			while (sessionsCreated < numberOfSessions) {
+				const dayOfWeek = currentDate.getDay();
 
-      if (sessionsToCreate.length > 0) {
-        await db.insert(sessions).values(sessionsToCreate);
-      }
+				// Find if there's a schedule for this day
+				const schedule = classData.schedules.find(
+					(s) => s.dayOfWeek === dayOfWeek && s.isActive,
+				);
 
-      return {
-        message: `Created ${sessionsToCreate.length} sessions`,
-        sessionsCreated: sessionsToCreate.length,
-      };
-    } catch (error) {
-      logger.error('Create sessions error:', error);
-      throw error;
-    }
-  }
+				if (schedule) {
+					sessionsToCreate.push({
+						classId: classData.id,
+						sessionDate: new Date(currentDate),
+						startTime: schedule.startTime,
+						endTime: schedule.endTime,
+						status: "scheduled",
+					});
+					sessionsCreated++;
+				}
 
-  async getStudentProgressInCourse(studentPublicId: string, coursePublicId: string) {
-    try {
-      const student = await db.query.students.findFirst({
-        where: eq(students.publicId, studentPublicId),
-      });
+				// Move to next day
+				currentDate.setDate(currentDate.getDate() + 1);
+			}
 
-      if (!student) {
-        throw new Error('Student not found');
-      }
+			if (sessionsToCreate.length > 0) {
+				await db.insert(sessions).values(sessionsToCreate);
+			}
 
-      const course = await db.query.courses.findFirst({
-        where: eq(courses.publicId, coursePublicId),
-      });
+			return {
+				message: `Created ${sessionsToCreate.length} sessions`,
+				sessionsCreated: sessionsToCreate.length,
+			};
+		} catch (error) {
+			logger.error("Create sessions error:", error);
+			throw error;
+		}
+	}
 
-      if (!course) {
-        throw new Error('Course not found');
-      }
+	async getStudentProgressInCourse(
+		studentPublicId: string,
+		coursePublicId: string,
+	) {
+		try {
+			const student = await db.query.students.findFirst({
+				where: eq(students.publicId, studentPublicId),
+			});
 
-      const enrollment = await db.query.studentEnrollments.findFirst({
-        where: and(
-          eq(studentEnrollments.studentId, student.id),
-          eq(studentEnrollments.courseId, course.id)
-        ),
-        with: {
-          class: {
-            with: {
-              sessions: {
-                with: {
-                  attendance: {
-                    where: eq(studentSessionAttendance.studentId, student.id),
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
+			if (!student) {
+				throw new Error("Student not found");
+			}
 
-      if (!enrollment) {
-        throw new Error('Student not enrolled in this course');
-      }
+			const course = await db.query.courses.findFirst({
+				where: eq(courses.publicId, coursePublicId),
+			});
 
-      const totalSessions = enrollment.class?.sessions?.length || 0;
-      const completedSessions = enrollment.class?.sessions?.filter(
-        s => s.status === 'completed'
-      ).length || 0;
-      const attendedSessions = enrollment.class?.sessions?.filter(
-        s => s.attendance?.some(a => a.attended)
-      ).length || 0;
+			if (!course) {
+				throw new Error("Course not found");
+			}
 
-      return {
-        studentId: student.publicId,
-        courseId: course.publicId,
-        enrollmentId: enrollment.publicId,
-        status: enrollment.status,
-        progress: {
-          totalSessions,
-          completedSessions,
-          attendedSessions,
-          attendanceRate: totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0,
-          completionRate: totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0,
-        },
-      };
-    } catch (error) {
-      logger.error('Get student progress error:', error);
-      throw error;
-    }
-  }
+			const enrollment = await db.query.studentEnrollments.findFirst({
+				where: and(
+					eq(studentEnrollments.studentId, student.id),
+					eq(studentEnrollments.courseId, course.id),
+				),
+				with: {
+					class: {
+						with: {
+							sessions: {
+								with: {
+									attendance: {
+										where: eq(studentSessionAttendance.studentId, student.id),
+									},
+								},
+							},
+						},
+					},
+				},
+			});
 
-  async generateSessionsForAllClasses() {
-    try {
-      // Get all active classes with their schedules
-      const allClasses = await db.query.classes.findMany({
-        where: eq(classes.isActive, true),
-        with: {
-          schedules: true,
-          course: true,
-        },
-      });
+			if (!enrollment) {
+				throw new Error("Student not enrolled in this course");
+			}
 
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      
-      // Calculate start and end of current month
-      const monthStart = new Date(currentYear, currentMonth, 1);
-      const monthEnd = new Date(currentYear, currentMonth + 1, 0); // Last day of month
+			const totalSessions = enrollment.class?.sessions?.length || 0;
+			const completedSessions =
+				enrollment.class?.sessions?.filter((s) => s.status === "completed")
+					.length || 0;
+			const attendedSessions =
+				enrollment.class?.sessions?.filter((s) =>
+					s.attendance?.some((a) => a.attended),
+				).length || 0;
 
-      let totalSessionsCreated = 0;
-      const results = [];
+			return {
+				studentId: student.publicId,
+				courseId: course.publicId,
+				enrollmentId: enrollment.publicId,
+				status: enrollment.status,
+				progress: {
+					totalSessions,
+					completedSessions,
+					attendedSessions,
+					attendanceRate:
+						totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0,
+					completionRate:
+						totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0,
+				},
+			};
+		} catch (error) {
+			logger.error("Get student progress error:", error);
+			throw error;
+		}
+	}
 
-      for (const classData of allClasses) {
-        if (!classData.schedules || classData.schedules.length === 0) {
-          continue;
-        }
+	async generateSessionsForAllClasses() {
+		try {
+			// Get all active classes with their schedules
+			const allClasses = await db.query.classes.findMany({
+				where: eq(classes.isActive, true),
+				with: {
+					schedules: true,
+					course: true,
+				},
+			});
 
-        const sessionsToCreate = [];
-        let currentDate = new Date(monthStart);
+			const now = new Date();
+			const currentYear = now.getFullYear();
+			const currentMonth = now.getMonth();
 
-        // Generate sessions for every day in the current month
-        while (currentDate <= monthEnd) {
-          const dayOfWeek = currentDate.getDay();
-          
-          // Find if there's a schedule for this day
-          const schedule = classData.schedules.find(s => s.dayOfWeek === dayOfWeek && s.isActive);
-          
-          if (schedule) {
-            const dateStr = currentDate.toISOString().split('T')[0];
-            
-            // Check if session already exists for this date (preserves completed sessions)
-            const existingSession = await db.query.sessions.findFirst({
-              where: and(
-                eq(sessions.classId, classData.id),
-                eq(sessions.sessionDate, dateStr)
-              ),
-            });
+			// Calculate start and end of current month
+			const monthStart = new Date(currentYear, currentMonth, 1);
+			const monthEnd = new Date(currentYear, currentMonth + 1, 0); // Last day of month
 
-            // Only create if no session exists (regardless of status)
-            if (!existingSession) {
-              sessionsToCreate.push({
-                classId: classData.id,
-                sessionDate: new Date(currentDate),
-                startTime: schedule.startTime,
-                endTime: schedule.endTime,
-                status: 'scheduled',
-              });
-            }
-          }
+			let totalSessionsCreated = 0;
+			const results = [];
 
-          // Move to next day
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
+			for (const classData of allClasses) {
+				if (!classData.schedules || classData.schedules.length === 0) {
+					continue;
+				}
 
-        if (sessionsToCreate.length > 0) {
-          await db.insert(sessions).values(sessionsToCreate);
-          totalSessionsCreated += sessionsToCreate.length;
-          results.push({
-            classId: classData.publicId,
-            className: classData.name,
-            sessionsCreated: sessionsToCreate.length,
-          });
-        }
-      }
+				const sessionsToCreate = [];
+				const currentDate = new Date(monthStart);
 
-      return {
-        message: `Generated ${totalSessionsCreated} sessions for ${results.length} classes for ${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`,
-        totalSessionsCreated,
-        classesProcessed: results.length,
-        month: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`,
-        details: results,
-      };
-    } catch (error) {
-      logger.error('Generate sessions for all classes error:', error);
-      throw error;
-    }
-  }
+				// Generate sessions for every day in the current month
+				while (currentDate <= monthEnd) {
+					const dayOfWeek = currentDate.getDay();
 
-  async getSessionDetails(sessionPublicId: string) {
-    try {
-      const session = await db.query.sessions.findFirst({
-        where: eq(sessions.publicId, sessionPublicId),
-        with: {
-          class: {
-            with: {
-              course: true,
-              level: true,
-              teacherPayments: {
-                with: {
-                  teacher: true,
-                },
-              },
-              students: {
-                where: eq(students.isActive, true),
-              },
-            },
-          },
-          attendance: {
-            with: {
-              student: true,
-            },
-          },
-        },
-      });
+					// Find if there's a schedule for this day
+					const schedule = classData.schedules.find(
+						(s) => s.dayOfWeek === dayOfWeek && s.isActive,
+					);
 
-      if (!session) {
-        throw new Error('Session not found');
-      }
+					if (schedule) {
+						const dateStr = currentDate.toISOString().split("T")[0];
 
-      return {
-        id: session.publicId,
-        sessionDate: session.sessionDate,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        status: session.status,
-        completedAt: session.completedAt,
-        notes: session.notes,
-        class: {
-          id: session.class.publicId,
-          name: session.class.name,
-          course: session.class.course?.name,
-          level: session.class.level?.levelNumber,
-          teacher: session.class.teacherPayments?.[0]?.teacher ? {
-            id: session.class.teacherPayments[0].teacher.publicId,
-            fullName: session.class.teacherPayments[0].teacher.fullName,
-          } : null,
-          totalStudents: session.class.students?.length || 0,
-        },
-        attendance: session.attendance?.map(a => ({
-          studentId: a.student.publicId,
-          studentName: a.student.fullName,
-          attended: a.attended,
-          notes: a.notes,
-        })) || [],
-        attendanceStats: {
-          total: session.attendance?.length || 0,
-          attended: session.attendance?.filter(a => a.attended).length || 0,
-          absent: session.attendance?.filter(a => !a.attended).length || 0,
-        },
-      };
-    } catch (error) {
-      logger.error('Get session details error:', error);
-      throw error;
-    }
-  }
+						// Check if session already exists for this date (preserves completed sessions)
+						const existingSession = await db.query.sessions.findFirst({
+							where: and(
+								eq(sessions.classId, classData.id),
+								eq(sessions.sessionDate, dateStr),
+							),
+						});
+
+						// Only create if no session exists (regardless of status)
+						if (!existingSession) {
+							sessionsToCreate.push({
+								classId: classData.id,
+								sessionDate: new Date(currentDate),
+								startTime: schedule.startTime,
+								endTime: schedule.endTime,
+								status: "scheduled",
+							});
+						}
+					}
+
+					// Move to next day
+					currentDate.setDate(currentDate.getDate() + 1);
+				}
+
+				if (sessionsToCreate.length > 0) {
+					await db.insert(sessions).values(sessionsToCreate);
+					totalSessionsCreated += sessionsToCreate.length;
+					results.push({
+						classId: classData.publicId,
+						className: classData.name,
+						sessionsCreated: sessionsToCreate.length,
+					});
+				}
+			}
+
+			return {
+				message: `Generated ${totalSessionsCreated} sessions for ${results.length} classes for ${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`,
+				totalSessionsCreated,
+				classesProcessed: results.length,
+				month: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`,
+				details: results,
+			};
+		} catch (error) {
+			logger.error("Generate sessions for all classes error:", error);
+			throw error;
+		}
+	}
+
+	async getSessionDetails(sessionPublicId: string) {
+		try {
+			const session = await db.query.sessions.findFirst({
+				where: eq(sessions.publicId, sessionPublicId),
+				with: {
+					class: {
+						with: {
+							course: true,
+							level: true,
+							teacherPayments: {
+								with: {
+									teacher: true,
+								},
+							},
+							students: {
+								where: eq(students.isActive, true),
+							},
+						},
+					},
+					attendance: {
+						with: {
+							student: true,
+						},
+					},
+				},
+			});
+
+			if (!session) {
+				throw new Error("Session not found");
+			}
+
+			return {
+				id: session.publicId,
+				sessionDate: session.sessionDate,
+				startTime: session.startTime,
+				endTime: session.endTime,
+				status: session.status,
+				completedAt: session.completedAt,
+				notes: session.notes,
+				class: {
+					id: session.class.publicId,
+					name: session.class.name,
+					course: session.class.course?.name,
+					level: session.class.level?.levelNumber,
+					teacher: session.class.teacherPayments?.[0]?.teacher
+						? {
+								id: session.class.teacherPayments[0].teacher.publicId,
+								fullName: session.class.teacherPayments[0].teacher.fullName,
+							}
+						: null,
+					totalStudents: session.class.students?.length || 0,
+				},
+				attendance:
+					session.attendance?.map((a) => ({
+						studentId: a.student.publicId,
+						studentName: a.student.fullName,
+						attended: a.attended,
+						notes: a.notes,
+					})) || [],
+				attendanceStats: {
+					total: session.attendance?.length || 0,
+					attended: session.attendance?.filter((a) => a.attended).length || 0,
+					absent: session.attendance?.filter((a) => !a.attended).length || 0,
+				},
+			};
+		} catch (error) {
+			logger.error("Get session details error:", error);
+			throw error;
+		}
+	}
+
+	async generateMissingPendingPayments() {
+		try {
+			logger.info("Starting generation of missing pending payments...");
+
+			// Get all active classes with their info
+			const allClasses = await db.query.classes.findMany({
+				where: eq(classes.isActive, true),
+				with: {
+					course: true,
+					level: true,
+					students: {
+						where: eq(students.isActive, true),
+					},
+					teacherPayments: {
+						where: eq(classTeacherPayments.isActive, true),
+						with: {
+							teacher: true,
+						},
+					},
+				},
+			});
+
+			let studentPaymentsCreated = 0;
+			let teacherPaymentsCreated = 0;
+			const results = [];
+
+			for (const classData of allClasses) {
+				if (!classData.course || !classData.level) {
+					continue;
+				}
+
+				const sessionsPerMonth = classData.course.sessionsPerMonth || 4;
+				const pricePerMonth = classData.level.pricePerMonth || "0";
+
+				// Get completed sessions count for this class
+				const completedSessionsResult = await db
+					.select({ count: sql`count(*)`.as("count") })
+					.from(sessions)
+					.where(
+						and(
+							eq(sessions.classId, classData.id),
+							eq(sessions.status, "completed"),
+						),
+					);
+
+				const totalCompletedSessions =
+					Number(completedSessionsResult[0]?.count) || 0;
+
+				if (totalCompletedSessions === 0) {
+					continue;
+				}
+
+				// Calculate how many payment cycles should exist
+				const expectedCycles = Math.floor(
+					totalCompletedSessions / sessionsPerMonth,
+				);
+
+				if (expectedCycles === 0) {
+					continue;
+				}
+
+				const classResults = {
+					classId: classData.publicId,
+					className: classData.name,
+					completedSessions: totalCompletedSessions,
+					expectedCycles,
+					studentPaymentsCreated: 0,
+					teacherPaymentsCreated: 0,
+				};
+
+				// Generate missing payments for each cycle
+				for (
+					let cycleNumber = 1;
+					cycleNumber <= expectedCycles;
+					cycleNumber++
+				) {
+					// Student payments
+					if (classData.students && classData.students.length > 0) {
+						for (const student of classData.students) {
+							// Check if payment already exists for this cycle
+							const existingPayment = await db.query.studentPayments.findFirst({
+								where: and(
+									eq(studentPayments.studentId, student.id),
+									eq(studentPayments.classId, classData.id),
+									eq(studentPayments.courseId, classData.courseId),
+									eq(studentPayments.cycleNumber, cycleNumber),
+									eq(studentPayments.autoGenerated, true),
+								),
+							});
+
+							if (!existingPayment) {
+								await db.insert(studentPayments).values({
+									studentId: student.id,
+									classId: classData.id,
+									courseId: classData.courseId,
+									paymentType: "tuition",
+									amount: pricePerMonth,
+									sessionsCovered: sessionsPerMonth,
+									status: "pending",
+									autoGenerated: true,
+									cycleNumber: cycleNumber,
+									notes: `دفعة شهرية تلقائية - دورة ${cycleNumber}`,
+								});
+								studentPaymentsCreated++;
+								classResults.studentPaymentsCreated++;
+							}
+						}
+					}
+
+					// Teacher payments
+					if (
+						classData.teacherPayments &&
+						classData.teacherPayments.length > 0
+					) {
+						for (const teacherPayment of classData.teacherPayments) {
+							if (teacherPayment.teacherId) {
+								// Check if payment already exists for this cycle
+								const existingTeacherPayment =
+									await db.query.teacherPayments.findFirst({
+										where: and(
+											eq(teacherPayments.teacherId, teacherPayment.teacherId),
+											eq(teacherPayments.classId, classData.id),
+											eq(teacherPayments.cycleNumber, cycleNumber),
+											eq(teacherPayments.autoGenerated, true),
+										),
+									});
+
+								if (!existingTeacherPayment) {
+									await db.insert(teacherPayments).values({
+										teacherId: teacherPayment.teacherId,
+										classId: classData.id,
+										amount: teacherPayment.paymentAmount,
+										sessionsCovered: sessionsPerMonth,
+										status: "pending",
+										autoGenerated: true,
+										cycleNumber: cycleNumber,
+										notes: `دفعة شهرية تلقائية - دورة ${cycleNumber}`,
+									});
+									teacherPaymentsCreated++;
+									classResults.teacherPaymentsCreated++;
+								}
+							}
+						}
+					}
+				}
+
+				if (
+					classResults.studentPaymentsCreated > 0 ||
+					classResults.teacherPaymentsCreated > 0
+				) {
+					results.push(classResults);
+				}
+			}
+
+			logger.info(
+				`Generated ${studentPaymentsCreated} student payments and ${teacherPaymentsCreated} teacher payments`,
+			);
+
+			return {
+				message: `Generated ${studentPaymentsCreated} student payments and ${teacherPaymentsCreated} teacher payments`,
+				studentPaymentsCreated,
+				teacherPaymentsCreated,
+				classesProcessed: results.length,
+				details: results,
+			};
+		} catch (error) {
+			logger.error("Generate missing pending payments error:", error);
+			throw error;
+		}
+	}
 }
 
 export const sessionService = new SessionService();
