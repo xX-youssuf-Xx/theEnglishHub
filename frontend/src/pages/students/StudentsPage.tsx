@@ -4,6 +4,7 @@ import {
 	Edit,
 	Eye,
 	GraduationCap,
+	History,
 	Loader2,
 	MoreVertical,
 	Phone,
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import { AddStudentModal } from "@/components/modals/AddStudentModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import { EditStudentModal } from "@/components/modals/EditStudentModal";
+import { EnrollmentHistoryModal } from "@/components/modals/EnrollmentHistoryModal";
 import { EnrollInCourseModal } from "@/components/modals/EnrollInCourseModal";
 import { RecordPaymentModal } from "@/components/modals/RecordPaymentModal";
 import { ViewStudentModal } from "@/components/modals/ViewStudentModal";
@@ -52,6 +54,7 @@ export function StudentsPage() {
 	const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [enrollModalOpen, setEnrollModalOpen] = useState(false);
+	const [historyModalOpen, setHistoryModalOpen] = useState(false);
 	const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
 		null,
 	);
@@ -108,6 +111,12 @@ export function StudentsPage() {
 		setSelectedStudentId(studentId);
 		setSelectedStudentName(studentName);
 		setEnrollModalOpen(true);
+	};
+
+	const handleViewHistory = (studentId: string, studentName: string) => {
+		setSelectedStudentId(studentId);
+		setSelectedStudentName(studentName);
+		setHistoryModalOpen(true);
 	};
 
 	if (error) {
@@ -266,27 +275,36 @@ export function StudentsPage() {
 																	<span>تعديل</span>
 																	<Edit className="w-4 h-4" />
 																</DropdownMenuItem>
-																<DropdownMenuItem
-																	onClick={() =>
-																		handleEnroll(student.id, student.fullName)
-																	}
-																	className="flex justify-end gap-1.5"
-																>
-																	<span>تسجيل في كورس</span>
-																	<GraduationCap className="w-4 h-4" />
-																</DropdownMenuItem>
-																<DropdownMenuItem
-																	onClick={() =>
-																		handleRecordPayment(
-																			student.id,
-																			student.fullName,
-																		)
-																	}
-																	className="flex justify-end gap-1.5"
-																>
-																	<span>تسجيل الدفع</span>
-																	<Wallet className="w-4 h-4" />
-																</DropdownMenuItem>
+																			<DropdownMenuItem
+																				onClick={() =>
+																					handleEnroll(student.id, student.fullName)
+																				}
+																				className="flex justify-end gap-1.5"
+																			>
+																				<span>تسجيل في كورس</span>
+																				<GraduationCap className="w-4 h-4" />
+																			</DropdownMenuItem>
+																			<DropdownMenuItem
+																				onClick={() =>
+																					handleViewHistory(student.id, student.fullName)
+																				}
+																				className="flex justify-end gap-1.5"
+																			>
+																				<span>سجل التسجيل</span>
+																				<History className="w-4 h-4" />
+																			</DropdownMenuItem>
+																			<DropdownMenuItem
+																				onClick={() =>
+																					handleRecordPayment(
+																						student.id,
+																						student.fullName,
+																					)
+																				}
+																				className="flex justify-end gap-1.5"
+																			>
+																				<span>تسجيل الدفع</span>
+																				<Wallet className="w-4 h-4" />
+																			</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleDelete(student.id, student.fullName)
@@ -385,6 +403,19 @@ export function StudentsPage() {
 				}}
 				studentId={selectedStudentId}
 				studentName={selectedStudentName}
+			/>
+
+			<EnrollmentHistoryModal
+				studentId={selectedStudentId}
+				studentName={selectedStudentName}
+				open={historyModalOpen}
+				onOpenChange={(open) => {
+					setHistoryModalOpen(open);
+					if (!open) {
+						setSelectedStudentId(null);
+						setSelectedStudentName("");
+					}
+				}}
 			/>
 		</div>
 	);
