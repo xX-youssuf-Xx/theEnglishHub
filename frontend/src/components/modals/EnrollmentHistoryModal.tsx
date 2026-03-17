@@ -7,7 +7,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
 
 interface EnrollmentHistoryModalProps {
@@ -72,7 +71,7 @@ export function EnrollmentHistoryModal({
 						لا يوجد سجل تسجيل
 					</div>
 				) : (
-					<ScrollArea className="h-[60vh] pr-4">
+					<div className="h-[60vh] overflow-y-auto pr-4">
 						<div className="space-y-6">
 							{history.map((enrollment, index) => (
 								<div
@@ -200,7 +199,7 @@ export function EnrollmentHistoryModal({
 								</div>
 							))}
 						</div>
-					</ScrollArea>
+					</div>
 				)}
 			</DialogContent>
 		</Dialog>
