@@ -204,6 +204,21 @@ export const studentEnrollments = pgTable('student_enrollments', {
   uniqueActiveStudent: unique().on(table.studentId, table.status), // Only one active enrollment per student
 }));
 
+// Enrollment History table - tracks class/level changes within an enrollment
+export const enrollmentHistory = pgTable('enrollment_history', {
+  id: serial('id').primaryKey(),
+  publicId: uuid('public_id').unique().notNull().defaultRandom(),
+  enrollmentId: integer('enrollment_id').notNull().references(() => studentEnrollments.id, { onDelete: 'cascade' }),
+  previousClassId: integer('previous_class_id').references(() => classes.id, { onDelete: 'set null' }),
+  newClassId: integer('new_class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+  previousLevelId: integer('previous_level_id').references(() => courseLevels.id, { onDelete: 'set null' }),
+  newLevelId: integer('new_level_id').notNull().references(() => courseLevels.id, { onDelete: 'cascade' }),
+  changeType: varchar('change_type', { length: 50 }).notNull(), // 'class_change', 'level_promotion', 'initial_enrollment'
+  changeDate: date('change_date').notNull().defaultNow(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Sessions table
 export const sessions = pgTable('sessions', {
   id: serial('id').primaryKey(),
@@ -426,7 +441,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   payments: many(studentPayments),
 }));
 
-export const studentEnrollmentsRelations = relations(studentEnrollments, ({ one }) => ({
+export const studentEnrollmentsRelations = relations(studentEnrollments, ({ one, many }) => ({
   student: one(students, {
     fields: [studentEnrollments.studentId],
     references: [students.id],
@@ -441,6 +456,30 @@ export const studentEnrollmentsRelations = relations(studentEnrollments, ({ one 
   }),
   currentLevel: one(courseLevels, {
     fields: [studentEnrollments.currentLevelId],
+    references: [courseLevels.id],
+  }),
+  history: many(enrollmentHistory),
+}));
+
+export const enrollmentHistoryRelations = relations(enrollmentHistory, ({ one }) => ({
+  enrollment: one(studentEnrollments, {
+    fields: [enrollmentHistory.enrollmentId],
+    references: [studentEnrollments.id],
+  }),
+  previousClass: one(classes, {
+    fields: [enrollmentHistory.previousClassId],
+    references: [classes.id],
+  }),
+  newClass: one(classes, {
+    fields: [enrollmentHistory.newClassId],
+    references: [classes.id],
+  }),
+  previousLevel: one(courseLevels, {
+    fields: [enrollmentHistory.previousLevelId],
+    references: [courseLevels.id],
+  }),
+  newLevel: one(courseLevels, {
+    fields: [enrollmentHistory.newLevelId],
     references: [courseLevels.id],
   }),
 }));

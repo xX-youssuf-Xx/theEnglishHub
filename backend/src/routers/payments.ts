@@ -215,6 +215,25 @@ export const paymentRouter = router({
       return paymentService.deleteExpense(input);
     }),
 
+  // Unified payment history
+  getPaymentHistory: protectedProcedure
+    .input(z.object({
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      type: z.enum(['student', 'teacher', 'expense', 'all']).optional(),
+      startDate: z.coerce.date().optional(),
+      endDate: z.coerce.date().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return paymentService.getPaymentHistory({
+        page: input?.page,
+        limit: input?.limit,
+        type: input?.type,
+        startDate: input?.startDate,
+        endDate: input?.endDate,
+      });
+    }),
+
   // Settle pending payments
   settleStudentPayment: adminProcedure
     .input(z.object({

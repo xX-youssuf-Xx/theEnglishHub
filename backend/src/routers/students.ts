@@ -162,7 +162,9 @@ export const studentRouter = router({
   changeClass: protectedProcedure
     .input(z.object({
       studentId: z.string().uuid(),
+      enrollmentId: z.string().uuid(),
       newClassId: z.string().uuid(),
+      notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       // Resolve class UUID to ID
@@ -174,7 +176,7 @@ export const studentRouter = router({
         throw new Error('Class not found');
       }
 
-      return studentService.changeClass(input.studentId, classData.id);
+      return studentService.changeClass(input.studentId, input.enrollmentId, classData.id, input.notes);
     }),
 
   advanceLevel: protectedProcedure
@@ -182,6 +184,8 @@ export const studentRouter = router({
       studentId: z.string().uuid(),
       enrollmentId: z.string().uuid(),
       newLevelId: z.string().uuid(),
+      newClassId: z.string().uuid().optional(),
+      notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       // Resolve level UUID to ID
@@ -193,7 +197,18 @@ export const studentRouter = router({
         throw new Error('Level not found');
       }
 
-      return studentService.advanceLevel(input.studentId, input.enrollmentId, level.id);
+      // Resolve optional class UUID to ID
+      let classIdNumber: number | undefined;
+      if (input.newClassId) {
+        const classData = await db.query.classes.findFirst({
+          where: eq(classes.publicId, input.newClassId),
+        });
+        if (classData) {
+          classIdNumber = classData.id;
+        }
+      }
+
+      return studentService.advanceLevel(input.studentId, input.enrollmentId, level.id, classIdNumber, input.notes);
     }),
 
   completeCourse: protectedProcedure
