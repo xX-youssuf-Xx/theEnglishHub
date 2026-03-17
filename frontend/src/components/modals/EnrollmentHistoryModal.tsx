@@ -121,10 +121,10 @@ export function EnrollmentHistoryModal({
 									{/* Changes History */}
 									{enrollment.changes && enrollment.changes.length > 0 && (
 										<div className="space-y-3">
-											<h4 className="font-medium text-sm text-text-muted flex items-center gap-2">
-												<History className="w-4 h-4" /
-												سجل التغييرات
-											</h4>
+														<h4 className="font-medium text-sm text-text-muted flex items-center gap-2">
+															<History className="w-4 h-4" />
+															سجل التغييرات
+														</h4>
 											<div className="space-y-2">
 												{enrollment.changes.map((change) => (
 													<div
