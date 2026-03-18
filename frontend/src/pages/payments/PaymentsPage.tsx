@@ -45,6 +45,9 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { PaymentDetailsModal } from "@/components/modals/PaymentDetailsModal";
+import { TeacherPaymentsBanner } from "@/components/payments/TeacherPaymentsBanner";
+import { StudentPaymentsBanner } from "@/components/payments/StudentPaymentsBanner";
 
 interface PendingPayment {
 	id: string;
@@ -78,6 +81,10 @@ export function PaymentsPage() {
 	const [isSettleDialogOpen, setIsSettleDialogOpen] = useState(false);
 	const [settleNotes, setSettleNotes] = useState("");
 	const [settleType, setSettleType] = useState<"student" | "teacher">("student");
+
+	// Payment details modal state
+	const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<any | null>(null);
+	const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
 	// Expense modal states
 	const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -266,115 +273,15 @@ export function PaymentsPage() {
 				</Button>
 			</div>
 
-			{/* Pending Payments Section */}
-			{(pendingStudentList.length > 0 || pendingTeacherList.length > 0) && (
-				<Card className="border-warning">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2 text-warning">
-							<AlertCircle className="w-5 h-5" />
-							دفعات معلقة ({pendingStudentList.length + pendingTeacherList.length})
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="p-0">
-						<div className="overflow-x-auto">
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>النوع</TableHead>
-										<TableHead>المبلغ</TableHead>
-										<TableHead>الشخص</TableHead>
-										<TableHead>الكلاس</TableHead>
-										<TableHead>التفاصيل</TableHead>
-										<TableHead className="text-left">الإجراءات</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{/* Pending Student Payments */}
-									{pendingStudentList.map((payment) => (
-										<TableRow key={`student-${payment.id}`} className="bg-warning/5">
-											<TableCell>
-												<Badge variant="outline" className="gap-1">
-													<User className="w-3 h-3" />
-													طالب
-												</Badge>
-											</TableCell>
-											<TableCell>
-												<span className="font-bold text-lg">
-													{payment.amount} جنيه
-												</span>
-											</TableCell>
-											<TableCell>{payment.student?.fullName}</TableCell>
-											<TableCell>{payment.class?.name}</TableCell>
-											<TableCell>
-												<div className="flex flex-col gap-1">
-													<Badge variant="secondary">
-														{payment.type === "tuition" ? "رسوم دراسية" : "كتب"}
-													</Badge>
-													{payment.cycleNumber && (
-														<span className="text-xs text-text-muted">
-															دورة {payment.cycleNumber}
-														</span>
-													)}
-												</div>
-											</TableCell>
-											<TableCell className="text-left">
-												<Button
-													size="sm"
-													onClick={() => handleSettleClick(payment as any, "student")}
-													className="gap-2"
-												>
-													<CheckSquare className="w-4 h-4" />
-													تسديد
-												</Button>
-											</TableCell>
-										</TableRow>
-									))}
-
-										{/* Pending Teacher Payments */}
-										{pendingTeacherList.map((payment) => (
-											<TableRow key={`teacher-${payment.id}`} className="bg-warning/5">
-												<TableCell>
-													<Badge variant="outline" className="gap-1">
-														<GraduationCap className="w-3 h-3" />
-														معلم
-													</Badge>
-												</TableCell>
-												<TableCell>
-													<span className="font-bold text-lg">
-														{payment.amount} جنيه
-													</span>
-												</TableCell>
-												<TableCell>{payment.teacher?.fullName}</TableCell>
-												<TableCell>{payment.class?.name}</TableCell>
-												<TableCell>
-													<div className="flex flex-col gap-1">
-														<Badge variant="secondary">راتب</Badge>
-														{payment.cycleNumber && (
-															<span className="text-xs text-text-muted">
-																دورة {payment.cycleNumber}
-																{payment.paymentCycle && ` (${payment.paymentCycle} حصص)`}
-															</span>
-														)}
-													</div>
-												</TableCell>
-												<TableCell className="text-left">
-													<Button
-														size="sm"
-														onClick={() => handleSettleClick(payment as any, "teacher")}
-														className="gap-2"
-													>
-														<CheckSquare className="w-4 h-4" />
-														تسديد
-													</Button>
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</div>
-						</CardContent>
-					</Card>
-				)}
+			{/* Pending Payments Banners */}
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<TeacherPaymentsBanner onRefresh={() => {
+					utils.payments.getPaymentHistory.invalidate();
+				}} />
+				<StudentPaymentsBanner onRefresh={() => {
+					utils.payments.getPaymentHistory.invalidate();
+				}} />
+			</div>
 
 			{/* Filters */}
 			<Card>
@@ -490,12 +397,19 @@ export function PaymentsPage() {
 												لا توجد دفعات
 											</TableCell>
 										</TableRow>
-									) : (
-										filteredPayments.map((payment) => (
-											<TableRow key={payment.id}>
-												<TableCell>
-													{new Date(payment.date).toLocaleDateString("ar-EG")}
-												</TableCell>
+								) : (
+									filteredPayments.map((payment) => (
+										<TableRow
+											key={payment.id}
+											className="cursor-pointer hover:bg-muted/50"
+											onClick={() => {
+												setSelectedPaymentDetails(payment);
+												setIsDetailsModalOpen(true);
+											}}
+										>
+											<TableCell>
+												{new Date(payment.date).toLocaleDateString("ar-EG")}
+											</TableCell>
 												<TableCell>
 													<Badge
 														variant={
@@ -748,6 +662,13 @@ export function PaymentsPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* Payment Details Modal */}
+			<PaymentDetailsModal
+				payment={selectedPaymentDetails}
+				isOpen={isDetailsModalOpen}
+				onClose={() => setIsDetailsModalOpen(false)}
+			/>
 		</div>
 	);
 }

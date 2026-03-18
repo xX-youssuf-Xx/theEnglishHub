@@ -1,0 +1,270 @@
+import { useState } from "react";
+import { BookOpen, Loader2, Search, Users, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+
+interface StudentPaymentsBannerProps {
+  onRefresh: () => void;
+}
+
+export function StudentPaymentsBanner({ onRefresh }: StudentPaymentsBannerProps) {
+  const [isCoursesModalOpen, setIsCoursesModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<{
+    courseId: string;
+    courseName: string;
+    payments: any[];
+  } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { data, isLoading } = trpc.payments.getPendingPaymentsByCourse.useQuery(undefined, {
+    enabled: isCoursesModalOpen,
+  });
+
+  const settleMutation = trpc.payments.settleStudentPayment.useMutation({
+    onSuccess: () => {
+      toast.success("تم تسديد الدفعة بنجاح");
+      onRefresh();
+      // Refresh the selected course data
+      if (selectedCourse) {
+        const updatedCourse = data?.data.find((c: any) => c.course.id === selectedCourse.courseId);
+        if (updatedCourse) {
+          setSelectedCourse({
+            courseId: updatedCourse.course.id,
+            courseName: updatedCourse.course.name,
+            payments: updatedCourse.payments,
+          });
+        }
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
+  const courses = data?.data || [];
+  const totalCourses = courses.length;
+  const totalPendingAmount = courses.reduce((sum: number, c: any) => sum + c.totalAmount, 0);
+  const totalStudents = courses.reduce((sum: number, c: any) => sum + c.studentCount, 0);
+
+  const handleCourseClick = (course: any) => {
+    setSelectedCourse({
+      courseId: course.course.id,
+      courseName: course.course.name,
+      payments: course.payments,
+    });
+    setSearchQuery("");
+  };
+
+  const handleSettle = (paymentId: string) => {
+    settleMutation.mutate({
+      paymentId,
+      notes: `تسديد فردي من صفحة الدفعات`,
+    });
+  };
+
+  // Filter payments by search query
+  const filteredPayments = selectedCourse?.payments.filter((payment: any) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      payment.student?.fullName?.toLowerCase().includes(query) ||
+      payment.class?.name?.toLowerCase().includes(query)
+    );
+  });
+
+  return (
+    <>
+      {/* Banner */}
+      <Card 
+        className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-success"
+        onClick={() => setIsCoursesModalOpen(true)}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-success" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">دفعات الطلاب</h3>
+                <p className="text-sm text-muted-foreground">
+                  {totalStudents} طالب لديهم دفعات معلقة في {totalCourses} كورس
+                </p>
+              </div>
+            </div>
+            <div className="text-left">
+              <p className="text-2xl font-bold text-success">
+                {totalPendingAmount.toFixed(2)} جنيه
+              </p>
+              <p className="text-sm text-muted-foreground">إجمالي المعلق</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Courses List Modal */}
+      <Dialog open={isCoursesModalOpen} onOpenChange={setIsCoursesModalOpen}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="w-6 h-6" />
+              الكورسات ذات الدفعات المعلقة
+            </DialogTitle>
+          </DialogHeader>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+          ) : courses.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              لا يوجد كورسات لديها دفعات معلقة
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {courses.map((course: any) => (
+                <div
+                  key={course.course.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => handleCourseClick(course)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-success" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{course.course.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {course.studentCount} طالب - {course.paymentCount} دفعة
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xl font-bold text-success">
+                      {course.totalAmount.toFixed(2)} جنيه
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Course Students Payments Modal */}
+      <Dialog open={!!selectedCourse} onOpenChange={() => setSelectedCourse(null)}>
+        <DialogContent className="max-w-3xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>دفعات طلاب {selectedCourse?.courseName}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedCourse(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedCourse && (
+            <div className="space-y-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="البحث باسم الطالب أو الكلاس..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+
+              {/* Payments List */}
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {filteredPayments?.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    لا توجد دفعات مطابقة للبحث
+                  </div>
+                ) : (
+                  filteredPayments?.map((payment: any, index: number) => (
+                    <div
+                      key={payment.id}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground w-6">
+                          {index + 1}
+                        </span>
+                        <div>
+                          <p className="font-medium">{payment.student?.fullName}</p>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{payment.class?.name}</span>
+                            {payment.type === "books" && (
+                              <Badge variant="secondary" className="text-xs">
+                                كتب
+                              </Badge>
+                            )}
+                            {payment.type === "tuition" && (
+                              <Badge variant="outline" className="text-xs">
+                                رسوم دراسية
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-left">
+                          <p className="font-bold">{payment.amount} جنيه</p>
+                          {payment.cycleNumber && (
+                            <p className="text-xs text-muted-foreground">
+                              دورة {payment.cycleNumber}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSettle(payment.id)}
+                          disabled={settleMutation.isPending}
+                        >
+                          {settleMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "تسديد"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    إجمالي: {filteredPayments?.length || 0} دفعة
+                  </p>
+                  <p className="text-xl font-bold text-success">
+                    {filteredPayments
+                      ?.reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0)
+                      .toFixed(2)} جنيه
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
