@@ -91,20 +91,24 @@ export class StudentService {
           parentPhone: s.parentPhone,
           address: s.address,
           emergencyContact: s.emergencyContact,
-          class: s.class ? { id: s.class.publicId, name: s.class.name } : null,
+          class: s.class ? {
+            id: s.class.publicId,
+            name: s.class.name,
+          } : null,
+          course: s.enrollments?.[0]?.course ? {
+            id: s.enrollments[0].course.publicId,
+            name: s.enrollments[0].course.name,
+          } : null,
+          currentLevel: s.enrollments?.[0]?.currentLevel ? {
+            id: s.enrollments[0].currentLevel.publicId,
+            levelNumber: s.enrollments[0].currentLevel.levelNumber,
+          } : null,
           enrollments: s.enrollments?.map(e => ({
             id: e.publicId,
-            course: { id: e.course.publicId, name: e.course.name },
-            currentLevel: { id: e.currentLevel.publicId, number: e.currentLevel.levelNumber },
-          })),
+            courseId: e.courseId,
+            status: e.status,
+          })) || [],
           paymentStatus: calculatePaymentStatus(s),
-          latestPayment: s.payments?.[0] ? {
-            amount: s.payments[0].amount,
-            sessionsCovered: s.payments[0].sessionsCovered,
-            paymentDate: s.payments[0].paymentDate,
-            status: s.payments[0].status,
-          } : null,
-          isActive: s.isActive,
           createdAt: s.createdAt,
         })),
         pagination: {

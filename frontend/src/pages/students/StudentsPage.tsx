@@ -177,14 +177,14 @@ export function StudentsPage() {
 							<>
 								<Table>
 									<TableHeader>
-										<TableRow>
-											<TableHead>الطالب</TableHead>
-											<TableHead>ولي الأمر</TableHead>
-											<TableHead>الكلاس</TableHead>
-											<TableHead>الكورسات</TableHead>
-											<TableHead>تاريخ التسجيل</TableHead>
-											<TableHead className="text-left">الإجراءات</TableHead>
-										</TableRow>
+									<TableRow>
+										<TableHead>الطالب</TableHead>
+										<TableHead>ولي الأمر</TableHead>
+										<TableHead>الكورس</TableHead>
+										<TableHead>الكلاس</TableHead>
+										<TableHead>تاريخ التسجيل</TableHead>
+										<TableHead className="text-left">الإجراءات</TableHead>
+									</TableRow>
 									</TableHeader>
 									<TableBody>
 										{students.length === 0 ? (
@@ -230,15 +230,17 @@ export function StudentsPage() {
 														</div>
 													</TableCell>
 													<TableCell>
-														<span className="text-sm">
-															{student.class?.name || "غير مسجل"}
-														</span>
-													</TableCell>
-													<TableCell>
 														<div className="flex items-center gap-1">
 															<BookOpen className="w-4 h-4 text-text-muted" />
-															<span>{student.enrollments?.length || 0}</span>
+															<span className="text-sm">
+																{student.course?.name || "غير مسجل"}
+															</span>
 														</div>
+													</TableCell>
+													<TableCell>
+														<span className="text-sm">
+															{student.class?.name || "-"}
+														</span>
 													</TableCell>
 													<TableCell>
 														{student.createdAt &&
