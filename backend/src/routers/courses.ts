@@ -1,316 +1,393 @@
-import { z } from 'zod';
-import { router, protectedProcedure, adminProcedure } from '../trpc/context';
-import { courseService } from '../services/courses';
-import { db } from '../db';
-import { courses as coursesSchema, courseLevels, classes as classesSchema, coursePrerequisites, teachers } from '../db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "../db";
+import {
+	classes as classesSchema,
+	courseLevels,
+	coursePrerequisites,
+	courses as coursesSchema,
+	teachers,
+} from "../db/schema";
+import { courseService } from "../services/courses";
+import { adminProcedure, protectedProcedure, router } from "../trpc/context";
 
 export const courseRouter = router({
-  getAll: protectedProcedure
-    .query(async () => {
-      return courseService.getAll();
-    }),
+	getAll: protectedProcedure.query(async () => {
+		return courseService.getAll();
+	}),
 
-  getById: protectedProcedure
-    .input(z.string().uuid())
-    .query(async ({ input }) => {
-      return courseService.getById(input);
-    }),
+	getById: protectedProcedure
+		.input(z.string().uuid())
+		.query(async ({ input }) => {
+			return courseService.getById(input);
+		}),
 
-  create: adminProcedure
-    .input(z.object({
-      name: z.string().min(3),
-      description: z.string().optional(),
-      syllabus: z.string().optional(),
-      sessionsPerMonth: z.number().int().min(1).max(31).default(4),
-      prerequisiteCourseIds: z.array(z.string().uuid()).optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const { prerequisiteCourseIds, ...courseData } = input;
-      
-      const result = await courseService.create(courseData);
-      
-      // Add course prerequisites if provided
-      if (prerequisiteCourseIds && prerequisiteCourseIds.length > 0 && result.id) {
-        await courseService.setCoursePrerequisites(result.id, prerequisiteCourseIds);
-      }
-      
-      return result;
-    }),
+	create: adminProcedure
+		.input(
+			z.object({
+				name: z.string().min(3),
+				description: z.string().optional(),
+				syllabus: z.string().optional(),
+				sessionsPerMonth: z.number().int().min(1).max(31).default(4),
+				prerequisiteCourseIds: z.array(z.string().uuid()).optional(),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			const { prerequisiteCourseIds, ...courseData } = input;
 
-  update: adminProcedure
-    .input(z.object({
-      id: z.string().uuid(),
-      data: z.object({
-        name: z.string().min(3).optional(),
-        description: z.string().optional(),
-        syllabus: z.string().optional(),
-        sessionsPerMonth: z.number().int().min(1).max(31).optional(),
-      }),
-    }))
-    .mutation(async ({ input }) => {
-      return courseService.update(input.id, input.data);
-    }),
+			const result = await courseService.create(courseData);
 
-  delete: adminProcedure
-    .input(z.string().uuid())
-    .mutation(async ({ input }) => {
-      return courseService.delete(input);
-    }),
+			// Add course prerequisites if provided
+			if (
+				prerequisiteCourseIds &&
+				prerequisiteCourseIds.length > 0 &&
+				result.id
+			) {
+				await courseService.setCoursePrerequisites(
+					result.id,
+					prerequisiteCourseIds,
+				);
+			}
 
-  // Level management
-  getLevels: protectedProcedure
-    .input(z.object({
-      courseId: z.string().uuid(),
-    }))
-    .query(async ({ input }) => {
-      const course = await db.query.courses.findFirst({
-        where: eq(coursesSchema.publicId, input.courseId),
-        with: {
-          levels: {
-            with: {
-              prerequisites: {
-                with: {
-                  prerequisiteLevel: true,
-                },
-              },
-            },
-          },
-        },
-      });
+			return result;
+		}),
 
-      if (!course) {
-        throw new Error('Course not found');
-      }
+	update: adminProcedure
+		.input(
+			z.object({
+				id: z.string().uuid(),
+				data: z.object({
+					name: z.string().min(3).optional(),
+					description: z.string().optional(),
+					syllabus: z.string().optional(),
+					sessionsPerMonth: z.number().int().min(1).max(31).optional(),
+				}),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			return courseService.update(input.id, input.data);
+		}),
 
-      return {
-        data: course.levels?.map(level => ({
-          id: level.publicId,
-          levelNumber: level.levelNumber,
-          durationMonths: level.durationMonths,
-          pricePerMonth: level.pricePerMonth,
-          description: level.description,
-          prerequisites: level.prerequisites?.map(p => ({
-            id: p.prerequisiteLevel.publicId,
-            levelNumber: p.prerequisiteLevel.levelNumber,
-          })) || [],
-        })) || [],
-      };
-    }),
+	delete: adminProcedure
+		.input(z.string().uuid())
+		.mutation(async ({ input }) => {
+			return courseService.delete(input);
+		}),
 
-  addLevel: adminProcedure
-    .input(z.object({
-      courseId: z.string().uuid(),
-      levelNumber: z.number().int().positive(),
-      durationMonths: z.number().int().positive().default(4),
-      pricePerMonth: z.number().positive().optional(),
-      description: z.string().optional(),
-      prerequisiteLevelIds: z.array(z.string().uuid()).optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const { courseId, prerequisiteLevelIds, ...levelData } = input;
-      
-      // Resolve course UUID to ID
-      const course = await db.query.courses.findFirst({
-        where: eq(coursesSchema.publicId, courseId),
-      });
+	// Level management
+	getLevels: protectedProcedure
+		.input(
+			z.object({
+				courseId: z.string().uuid(),
+			}),
+		)
+		.query(async ({ input }) => {
+			const course = await db.query.courses.findFirst({
+				where: eq(coursesSchema.publicId, input.courseId),
+				with: {
+					levels: {
+						with: {
+							prerequisites: {
+								with: {
+									prerequisiteLevel: true,
+								},
+							},
+						},
+					},
+				},
+			});
 
-      if (!course) {
-        throw new Error('Course not found');
-      }
+			if (!course) {
+				throw new Error("Course not found");
+			}
 
-      const result = await courseService.addLevel(courseId, levelData);
-      
-      // Set level prerequisites if provided
-      if (prerequisiteLevelIds && prerequisiteLevelIds.length > 0 && result.id) {
-        await courseService.setPrerequisites(result.id, prerequisiteLevelIds);
-      }
-      
-      return result;
-    }),
+			return {
+				data:
+					course.levels?.map((level) => ({
+						id: level.publicId,
+						levelNumber: level.levelNumber,
+						durationMonths: level.durationMonths,
+						pricePerMonth: level.pricePerMonth,
+						description: level.description,
+						prerequisites:
+							level.prerequisites?.map((p) => ({
+								id: p.prerequisiteLevel.publicId,
+								levelNumber: p.prerequisiteLevel.levelNumber,
+							})) || [],
+					})) || [],
+			};
+		}),
 
-  setLevelPrerequisites: adminProcedure
-    .input(z.object({
-      levelId: z.string().uuid(),
-      prerequisiteLevelIds: z.array(z.string().uuid()),
-    }))
-    .mutation(async ({ input }) => {
-      return courseService.setPrerequisites(input.levelId, input.prerequisiteLevelIds);
-    }),
+	addLevel: adminProcedure
+		.input(
+			z.object({
+				courseId: z.string().uuid(),
+				levelNumber: z.number().int().positive(),
+				durationMonths: z.number().int().positive().default(4),
+				pricePerMonth: z.number().positive().optional(),
+				description: z.string().optional(),
+				prerequisiteLevelIds: z.array(z.string().uuid()).optional(),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			const { courseId, prerequisiteLevelIds, ...levelData } = input;
 
-  // Course prerequisites
-  setCoursePrerequisites: adminProcedure
-    .input(z.object({
-      courseId: z.string().uuid(),
-      prerequisiteCourseIds: z.array(z.string().uuid()),
-    }))
-    .mutation(async ({ input }) => {
-      return courseService.setCoursePrerequisites(input.courseId, input.prerequisiteCourseIds);
-    }),
+			// Resolve course UUID to ID
+			const course = await db.query.courses.findFirst({
+				where: eq(coursesSchema.publicId, courseId),
+			});
 
-  getCoursePrerequisites: protectedProcedure
-    .input(z.string().uuid())
-    .query(async ({ input }) => {
-      const course = await db.query.courses.findFirst({
-        where: eq(coursesSchema.publicId, input),
-        with: {
-          prerequisites: {
-            with: {
-              prerequisiteCourse: true,
-            },
-          },
-        },
-      });
+			if (!course) {
+				throw new Error("Course not found");
+			}
 
-      if (!course) {
-        throw new Error('Course not found');
-      }
+			const result = await courseService.addLevel(courseId, levelData);
 
-      return {
-        data: course.prerequisites?.map(p => ({
-          id: p.prerequisiteCourse.publicId,
-          name: p.prerequisiteCourse.name,
-        })) || [],
-      };
-    }),
+			// Set level prerequisites if provided
+			if (
+				prerequisiteLevelIds &&
+				prerequisiteLevelIds.length > 0 &&
+				result.id
+			) {
+				await courseService.setPrerequisites(result.id, prerequisiteLevelIds);
+			}
 
-  // Class management
-  getClasses: protectedProcedure
-    .input(z.string().uuid())
-    .query(async ({ input }) => {
-      const course = await db.query.courses.findFirst({
-        where: eq(coursesSchema.publicId, input),
-        with: {
-          classes: {
-            where: eq(classesSchema.isActive, true),
-            with: {
-              level: true,
-              teacher: true,
-              schedules: true,
-              students: true,
-            },
-          },
-        },
-      });
+			return result;
+		}),
 
-      if (!course) {
-        throw new Error('Course not found');
-      }
+	setLevelPrerequisites: adminProcedure
+		.input(
+			z.object({
+				levelId: z.string().uuid(),
+				prerequisiteLevelIds: z.array(z.string().uuid()),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			return courseService.setPrerequisites(
+				input.levelId,
+				input.prerequisiteLevelIds,
+			);
+		}),
 
-      return {
-        data: course.classes?.map(cls => ({
-          id: cls.publicId,
-          name: cls.name,
-          level: {
-            id: cls.level.publicId,
-            levelNumber: cls.level.levelNumber,
-          },
-          teacher: cls.teacher ? {
-            id: cls.teacher.publicId,
-            fullName: cls.teacher.fullName,
-          } : null,
-          schedules: cls.schedules?.filter(s => s.isActive).map(s => ({
-            dayOfWeek: s.dayOfWeek,
-            startTime: s.startTime,
-            endTime: s.endTime,
-          })) || [],
-          studentCount: cls.students?.filter(s => s.isActive).length || 0,
-        })) || [],
-      };
-    }),
+	// Course prerequisites
+	setCoursePrerequisites: adminProcedure
+		.input(
+			z.object({
+				courseId: z.string().uuid(),
+				prerequisiteCourseIds: z.array(z.string().uuid()),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			return courseService.setCoursePrerequisites(
+				input.courseId,
+				input.prerequisiteCourseIds,
+			);
+		}),
 
-  updateClass: adminProcedure
-    .input(z.object({
-      classId: z.string().uuid(),
-      name: z.string().min(3).optional(),
-      teacherId: z.string().uuid().optional(),
-      levelId: z.string().uuid().optional(),
-      isActive: z.boolean().optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const { classId, teacherId, levelId, ...updateData } = input;
-      
-      let teacherIdNum: number | undefined;
-      if (teacherId) {
-        const teacher = await db.query.teachers.findFirst({
-          where: eq(teachers.publicId, teacherId),
-        });
-        if (teacher) {
-          teacherIdNum = teacher.id;
-        }
-      }
+	getCoursePrerequisites: protectedProcedure
+		.input(z.string().uuid())
+		.query(async ({ input }) => {
+			const course = await db.query.courses.findFirst({
+				where: eq(coursesSchema.publicId, input),
+				with: {
+					prerequisites: {
+						with: {
+							prerequisiteCourse: true,
+						},
+					},
+				},
+			});
 
-      let levelIdNum: number | undefined;
-      if (levelId) {
-        const level = await db.query.courseLevels.findFirst({
-          where: eq(courseLevels.publicId, levelId),
-        });
-        if (level) {
-          levelIdNum = level.id;
-        }
-      }
+			if (!course) {
+				throw new Error("Course not found");
+			}
 
-      return courseService.updateClass(classId, {
-        ...updateData,
-        teacherId: teacherIdNum,
-        levelId: levelIdNum,
-      });
-    }),
+			return {
+				data:
+					course.prerequisites?.map((p) => ({
+						id: p.prerequisiteCourse.publicId,
+						name: p.prerequisiteCourse.name,
+					})) || [],
+			};
+		}),
 
-  createClass: adminProcedure
-    .input(z.object({
-      courseId: z.string().uuid(),
-      name: z.string().min(3),
-      levelId: z.string().uuid(),
-      teacherId: z.string().uuid().optional(),
-      teacherPaymentAmount: z.number().min(0).optional(),
-      teacherPaymentCycle: z.enum(['4', '8']).optional(),
-      schedules: z.array(z.object({
-        dayOfWeek: z.number().min(0).max(6),
-        startTime: z.string(),
-        endTime: z.string(),
-      })).optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const { courseId, levelId, teacherId, teacherPaymentAmount, teacherPaymentCycle, schedules, ...classData } = input;
-      
-      // Resolve UUIDs to IDs
-      const course = await db.query.courses.findFirst({
-        where: eq(coursesSchema.publicId, courseId),
-      });
+	// Class management
+	getClasses: protectedProcedure
+		.input(z.string().uuid())
+		.query(async ({ input }) => {
+			const course = await db.query.courses.findFirst({
+				where: eq(coursesSchema.publicId, input),
+				with: {
+					classes: {
+						where: eq(classesSchema.isActive, true),
+						with: {
+							level: true,
+							teacher: true,
+							teacherPayments: true,
+							schedules: true,
+							students: true,
+						},
+					},
+				},
+			});
 
-      const level = await db.query.courseLevels.findFirst({
-        where: eq(courseLevels.publicId, levelId),
-      });
+			if (!course) {
+				throw new Error("Course not found");
+			}
 
-      if (!course || !level) {
-        throw new Error('Course or level not found');
-      }
+			return {
+				data:
+					course.classes?.map((cls) => ({
+						id: cls.publicId,
+						name: cls.name,
+						level: {
+							id: cls.level.publicId,
+							levelNumber: cls.level.levelNumber,
+						},
+					teacher: cls.teacher
+						? {
+								id: cls.teacher.publicId,
+								fullName: cls.teacher.fullName,
+							}
+						: null,
+					teacherPayment: cls.teacherPayments?.[0]
+						? {
+								amount: cls.teacherPayments[0].paymentAmount,
+								cycle: cls.teacherPayments[0].paymentCycle,
+							}
+						: null,
+					schedules:
+							cls.schedules
+								?.filter((s) => s.isActive)
+								.map((s) => ({
+									dayOfWeek: s.dayOfWeek,
+									startTime: s.startTime,
+									endTime: s.endTime,
+								})) || [],
+						studentCount: cls.students?.filter((s) => s.isActive).length || 0,
+					})) || [],
+			};
+		}),
 
-      let teacherIdNum: number | undefined;
-      if (teacherId) {
-        const teacher = await db.query.teachers.findFirst({
-          where: eq(teachers.publicId, teacherId),
-        });
-        if (teacher) {
-          teacherIdNum = teacher.id;
-        }
-      }
+	updateClass: adminProcedure
+		.input(
+			z.object({
+				classId: z.string().uuid(),
+				name: z.string().min(3).optional(),
+				teacherId: z.string().uuid().optional(),
+				levelId: z.string().uuid().optional(),
+				teacherPaymentAmount: z.number().min(0).optional(),
+				teacherPaymentCycle: z.enum(["4", "8"]).optional(),
+				isActive: z.boolean().optional(),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			const {
+				classId,
+				teacherId,
+				levelId,
+				teacherPaymentAmount,
+				teacherPaymentCycle,
+				...updateData
+			} = input;
 
-      return courseService.createClass({
-        ...classData,
-        courseId: course.id,
-        levelId: level.id,
-        teacherId: teacherIdNum,
-        teacherPaymentAmount,
-        teacherPaymentCycle,
-        schedules,
-      });
-    }),
+			let teacherIdNum: number | undefined;
+			if (teacherId) {
+				const teacher = await db.query.teachers.findFirst({
+					where: eq(teachers.publicId, teacherId),
+				});
+				if (teacher) {
+					teacherIdNum = teacher.id;
+				}
+			}
 
-  deleteClass: adminProcedure
-    .input(z.string().uuid())
-    .mutation(async ({ input }) => {
-      return courseService.deleteClass(input);
-    }),
+			let levelIdNum: number | undefined;
+			if (levelId) {
+				const level = await db.query.courseLevels.findFirst({
+					where: eq(courseLevels.publicId, levelId),
+				});
+				if (level) {
+					levelIdNum = level.id;
+				}
+			}
+
+			return courseService.updateClass(classId, {
+				...updateData,
+				teacherId: teacherIdNum,
+				levelId: levelIdNum,
+				teacherPaymentAmount,
+				teacherPaymentCycle,
+			});
+		}),
+
+	createClass: adminProcedure
+		.input(
+			z.object({
+				courseId: z.string().uuid(),
+				name: z.string().min(3),
+				levelId: z.string().uuid(),
+				teacherId: z.string().uuid().optional(),
+				teacherPaymentAmount: z.number().min(0).optional(),
+				teacherPaymentCycle: z.enum(["4", "8"]).optional(),
+				schedules: z
+					.array(
+						z.object({
+							dayOfWeek: z.number().min(0).max(6),
+							startTime: z.string(),
+							endTime: z.string(),
+						}),
+					)
+					.optional(),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			const {
+				courseId,
+				levelId,
+				teacherId,
+				teacherPaymentAmount,
+				teacherPaymentCycle,
+				schedules,
+				...classData
+			} = input;
+
+			// Resolve UUIDs to IDs
+			const course = await db.query.courses.findFirst({
+				where: eq(coursesSchema.publicId, courseId),
+			});
+
+			const level = await db.query.courseLevels.findFirst({
+				where: eq(courseLevels.publicId, levelId),
+			});
+
+			if (!course || !level) {
+				throw new Error("Course or level not found");
+			}
+
+			let teacherIdNum: number | undefined;
+			if (teacherId) {
+				const teacher = await db.query.teachers.findFirst({
+					where: eq(teachers.publicId, teacherId),
+				});
+				if (teacher) {
+					teacherIdNum = teacher.id;
+				}
+			}
+
+			return courseService.createClass({
+				...classData,
+				courseId: course.id,
+				levelId: level.id,
+				teacherId: teacherIdNum,
+				teacherPaymentAmount,
+				teacherPaymentCycle,
+				schedules,
+			});
+		}),
+
+	deleteClass: adminProcedure
+		.input(z.string().uuid())
+		.mutation(async ({ input }) => {
+			return courseService.deleteClass(input);
+		}),
 });

@@ -45,6 +45,8 @@ export function AddClassModal({
 	const [formData, setFormData] = useState({
 		name: "",
 		teacherId: "",
+		teacherPaymentAmount: "",
+		teacherPaymentCycle: "4",
 		levelId: "",
 		schedules: [{ dayOfWeek: "0", startTime: "", endTime: "" }],
 	});
@@ -93,6 +95,8 @@ export function AddClassModal({
 		setFormData({
 			name: "",
 			teacherId: "",
+			teacherPaymentAmount: "",
+			teacherPaymentCycle: "4",
 			levelId: "",
 			schedules: [{ dayOfWeek: "0", startTime: "", endTime: "" }],
 		});
@@ -142,6 +146,11 @@ export function AddClassModal({
 				return;
 			}
 
+			if (formData.teacherId && !formData.teacherPaymentAmount) {
+				toast.error("مبلغ دفع المعلم مطلوب عند اختيار معلم");
+				return;
+			}
+
 			const validSchedules = formData.schedules.filter(
 				(s) => s.startTime && s.endTime,
 			);
@@ -155,6 +164,12 @@ export function AddClassModal({
 				name: formData.name,
 				levelId: formData.levelId,
 				teacherId: formData.teacherId || undefined,
+				teacherPaymentAmount: formData.teacherId
+					? Number(formData.teacherPaymentAmount)
+					: undefined,
+				teacherPaymentCycle: formData.teacherId
+					? (formData.teacherPaymentCycle as "4" | "8")
+					: undefined,
 				schedules: validSchedules.map((s) => ({
 					dayOfWeek: parseInt(s.dayOfWeek, 10),
 					startTime: s.startTime,
@@ -166,6 +181,13 @@ export function AddClassModal({
 			createClassMutation.mutate({
 				name: formData.name,
 				teacherId: formData.teacherId || undefined,
+				teacherPayment:
+					formData.teacherId && formData.teacherPaymentAmount
+						? {
+								paymentAmount: Number(formData.teacherPaymentAmount),
+								paymentCycle: formData.teacherPaymentCycle as "4" | "8",
+							}
+						: undefined,
 				scheduleDayOfWeek: formData.schedules[0]?.dayOfWeek
 					? parseInt(formData.schedules[0].dayOfWeek, 10)
 					: undefined,
@@ -257,6 +279,46 @@ export function AddClassModal({
 							</SelectContent>
 						</Select>
 					</div>
+
+					{formData.teacherId && (
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div className="space-y-2">
+								<Label htmlFor="teacherPaymentAmount">مبلغ دفع المعلم *</Label>
+								<Input
+									id="teacherPaymentAmount"
+									type="number"
+									min="1"
+									value={formData.teacherPaymentAmount}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											teacherPaymentAmount: e.target.value,
+										})
+									}
+									placeholder="مثال: 500"
+									required
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="teacherPaymentCycle">دورة دفع المعلم</Label>
+								<Select
+									value={formData.teacherPaymentCycle}
+									onValueChange={(value) =>
+										setFormData({ ...formData, teacherPaymentCycle: value })
+									}
+								>
+									<SelectTrigger id="teacherPaymentCycle">
+										<SelectValue placeholder="اختر دورة الدفع" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="4">كل 4 حصص</SelectItem>
+										<SelectItem value="8">كل 8 حصص</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					)}
 
 					<div className="space-y-2">
 						<div className="flex items-center justify-between">

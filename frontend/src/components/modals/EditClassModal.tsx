@@ -46,6 +46,8 @@ export function EditClassModal({
 		name: "",
 		levelId: "",
 		teacherId: "",
+		teacherPaymentAmount: "",
+		teacherPaymentCycle: "4",
 	});
 
 	const utils = trpc.useUtils();
@@ -72,6 +74,10 @@ export function EditClassModal({
 				name: selectedClass.name || "",
 				levelId: selectedClass.level?.id || "",
 				teacherId: selectedClass.teacher?.id || "",
+				teacherPaymentAmount: selectedClass.teacherPayment?.amount
+					? String(selectedClass.teacherPayment.amount)
+					: "",
+				teacherPaymentCycle: selectedClass.teacherPayment?.cycle || "4",
 			});
 		}
 	}, [selectedClass]);
@@ -95,11 +101,22 @@ export function EditClassModal({
 			return;
 		}
 
+		if (formData.teacherId && !formData.teacherPaymentAmount) {
+			toast.error("مبلغ دفع المعلم مطلوب عند اختيار معلم");
+			return;
+		}
+
 		updateClassMutation.mutate({
 			classId,
 			name: formData.name,
 			levelId: formData.levelId,
 			teacherId: formData.teacherId || undefined,
+			teacherPaymentAmount: formData.teacherId
+				? Number(formData.teacherPaymentAmount)
+				: undefined,
+			teacherPaymentCycle: formData.teacherId
+				? (formData.teacherPaymentCycle as "4" | "8")
+				: undefined,
 		});
 	};
 
@@ -179,6 +196,48 @@ export function EditClassModal({
 							</SelectContent>
 						</Select>
 					</div>
+
+					{formData.teacherId && (
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div className="space-y-2">
+								<Label htmlFor="editTeacherPaymentAmount">
+									مبلغ دفع المعلم *
+								</Label>
+								<Input
+									id="editTeacherPaymentAmount"
+									type="number"
+									min="1"
+									value={formData.teacherPaymentAmount}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											teacherPaymentAmount: e.target.value,
+										})
+									}
+									placeholder="مثال: 500"
+									required
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="editTeacherPaymentCycle">دورة دفع المعلم</Label>
+								<Select
+									value={formData.teacherPaymentCycle}
+									onValueChange={(value) =>
+										setFormData({ ...formData, teacherPaymentCycle: value })
+									}
+								>
+									<SelectTrigger id="editTeacherPaymentCycle">
+										<SelectValue placeholder="اختر دورة الدفع" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="4">كل 4 حصص</SelectItem>
+										<SelectItem value="8">كل 8 حصص</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					)}
 
 					<div className="flex gap-2 pt-4">
 						<Button
