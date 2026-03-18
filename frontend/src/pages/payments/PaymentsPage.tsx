@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PaymentDetailsModal } from "@/components/modals/PaymentDetailsModal";
+import { StudentPaymentsBanner } from "@/components/payments/StudentPaymentsBanner";
+import { TeacherPaymentsBanner } from "@/components/payments/TeacherPaymentsBanner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,9 +48,6 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { PaymentDetailsModal } from "@/components/modals/PaymentDetailsModal";
-import { TeacherPaymentsBanner } from "@/components/payments/TeacherPaymentsBanner";
-import { StudentPaymentsBanner } from "@/components/payments/StudentPaymentsBanner";
 
 interface PendingPayment {
 	id: string;
@@ -71,19 +71,26 @@ type StudentPaymentType = "all" | "tuition" | "books";
 export function PaymentsPage() {
 	const [page, setPage] = useState(1);
 	const [filterType, setFilterType] = useState<PaymentType>("all");
-	const [studentFilterType, setStudentFilterType] = useState<StudentPaymentType>("all");
+	const [studentFilterType, setStudentFilterType] =
+		useState<StudentPaymentType>("all");
 	const [startDate, setStartDate] = useState<string>("");
 	const [endDate, setEndDate] = useState<string>("");
 	const [searchQuery, setSearchQuery] = useState("");
 	const limit = 10;
 
-	const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
+	const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(
+		null,
+	);
 	const [isSettleDialogOpen, setIsSettleDialogOpen] = useState(false);
 	const [settleNotes, setSettleNotes] = useState("");
-	const [settleType, setSettleType] = useState<"student" | "teacher">("student");
+	const [settleType, setSettleType] = useState<"student" | "teacher">(
+		"student",
+	);
 
 	// Payment details modal state
-	const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<any | null>(null);
+	const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
+		any | null
+	>(null);
 	const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
 	// Expense modal states
@@ -169,7 +176,10 @@ export function PaymentsPage() {
 		},
 	});
 
-	const handleSettleClick = (payment: PendingPayment, type: "student" | "teacher") => {
+	const handleSettleClick = (
+		payment: PendingPayment,
+		type: "student" | "teacher",
+	) => {
 		setSelectedPayment(payment);
 		setSettleType(type);
 		setIsSettleDialogOpen(true);
@@ -214,7 +224,11 @@ export function PaymentsPage() {
 			const personName = payment.person?.name?.toLowerCase() || "";
 			const className = payment.class?.name?.toLowerCase() || "";
 			const courseName = payment.course?.name?.toLowerCase() || "";
-			if (!personName.includes(query) && !className.includes(query) && !courseName.includes(query)) {
+			if (
+				!personName.includes(query) &&
+				!className.includes(query) &&
+				!courseName.includes(query)
+			) {
 				return false;
 			}
 		}
@@ -264,10 +278,7 @@ export function PaymentsPage() {
 						إدارة دفعات الطلاب والمعلمين والمصروفات
 					</p>
 				</div>
-				<Button
-					onClick={() => setIsExpenseModalOpen(true)}
-					className="gap-2"
-				>
+				<Button onClick={() => setIsExpenseModalOpen(true)} className="gap-2">
 					<Plus className="w-4 h-4" />
 					تسجيل مصروفات
 				</Button>
@@ -275,12 +286,16 @@ export function PaymentsPage() {
 
 			{/* Pending Payments Banners */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<TeacherPaymentsBanner onRefresh={() => {
-					utils.payments.getPaymentHistory.invalidate();
-				}} />
-				<StudentPaymentsBanner onRefresh={() => {
-					utils.payments.getPaymentHistory.invalidate();
-				}} />
+				<TeacherPaymentsBanner
+					onRefresh={() => {
+						utils.payments.getPaymentHistory.invalidate();
+					}}
+				/>
+				<StudentPaymentsBanner
+					onRefresh={() => {
+						utils.payments.getPaymentHistory.invalidate();
+					}}
+				/>
 			</div>
 
 			{/* Filters */}
@@ -397,19 +412,19 @@ export function PaymentsPage() {
 												لا توجد دفعات
 											</TableCell>
 										</TableRow>
-								) : (
-									filteredPayments.map((payment) => (
-										<TableRow
-											key={payment.id}
-											className="cursor-pointer hover:bg-muted/50"
-											onClick={() => {
-												setSelectedPaymentDetails(payment);
-												setIsDetailsModalOpen(true);
-											}}
-										>
-											<TableCell>
-												{new Date(payment.date).toLocaleDateString("ar-EG")}
-											</TableCell>
+									) : (
+										filteredPayments.map((payment) => (
+											<TableRow
+												key={payment.id}
+												className="cursor-pointer hover:bg-muted/50"
+												onClick={() => {
+													setSelectedPaymentDetails(payment);
+													setIsDetailsModalOpen(true);
+												}}
+											>
+												<TableCell>
+													{new Date(payment.date).toLocaleDateString("ar-EG")}
+												</TableCell>
 												<TableCell>
 													<Badge
 														variant={
@@ -431,9 +446,7 @@ export function PaymentsPage() {
 												<TableCell>
 													{payment.person?.name || payment.subType || "-"}
 												</TableCell>
-												<TableCell>
-													{payment.class?.name || "-"}
-												</TableCell>
+												<TableCell>{payment.class?.name || "-"}</TableCell>
 												<TableCell>
 													<div className="flex flex-col gap-1">
 														{payment.cycleNumber && (
@@ -462,9 +475,7 @@ export function PaymentsPage() {
 																	: "warning"
 															}
 														>
-															{payment.status === "paid"
-																? "تم السداد"
-																: "معلق"}
+															{payment.status === "paid" ? "تم السداد" : "معلق"}
 														</Badge>
 													)}
 												</TableCell>
@@ -492,7 +503,9 @@ export function PaymentsPage() {
 										<Button
 											variant="outline"
 											size="sm"
-											onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+											onClick={() =>
+												setPage((p) => Math.min(totalPages, p + 1))
+											}
 											disabled={page === totalPages}
 										>
 											التالي
@@ -558,7 +571,10 @@ export function PaymentsPage() {
 					)}
 
 					<DialogFooter className="gap-2">
-						<Button variant="outline" onClick={() => setIsSettleDialogOpen(false)}>
+						<Button
+							variant="outline"
+							onClick={() => setIsSettleDialogOpen(false)}
+						>
 							إلغاء
 						</Button>
 						<Button
@@ -627,7 +643,10 @@ export function PaymentsPage() {
 								type="date"
 								value={expenseData.expenseDate}
 								onChange={(e) =>
-									setExpenseData({ ...expenseData, expenseDate: e.target.value })
+									setExpenseData({
+										...expenseData,
+										expenseDate: e.target.value,
+									})
 								}
 							/>
 						</div>
@@ -638,7 +657,10 @@ export function PaymentsPage() {
 								id="description"
 								value={expenseData.description}
 								onChange={(e) =>
-									setExpenseData({ ...expenseData, description: e.target.value })
+									setExpenseData({
+										...expenseData,
+										description: e.target.value,
+									})
 								}
 								placeholder="تفاصيل إضافية عن المصروف..."
 							/>
@@ -646,7 +668,10 @@ export function PaymentsPage() {
 					</div>
 
 					<DialogFooter className="gap-2">
-						<Button variant="outline" onClick={() => setIsExpenseModalOpen(false)}>
+						<Button
+							variant="outline"
+							onClick={() => setIsExpenseModalOpen(false)}
+						>
 							إلغاء
 						</Button>
 						<Button
