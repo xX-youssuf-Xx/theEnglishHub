@@ -260,4 +260,38 @@ export const paymentRouter = router({
         notes: input.notes,
       });
     }),
+
+  // Grouped pending payments
+  getPendingPaymentsByTeacher: protectedProcedure
+    .query(async () => {
+      return paymentService.getPendingPaymentsByTeacher();
+    }),
+
+  getPendingPaymentsByCourse: protectedProcedure
+    .query(async () => {
+      return paymentService.getPendingPaymentsByCourse();
+    }),
+
+  // Bulk operations
+  bulkSettleTeacherPayments: adminProcedure
+    .input(z.object({
+      teacherId: z.string().uuid(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Resolve UUID to ID
+      const teacher = await db.query.teachers.findFirst({
+        where: eq(teachers.publicId, input.teacherId),
+      });
+
+      if (!teacher) {
+        throw new Error('Teacher not found');
+      }
+
+      return paymentService.bulkSettleTeacherPayments({
+        teacherId: teacher.id,
+        recordedBy: ctx.user?.id,
+        notes: input.notes,
+      });
+    }),
 });

@@ -210,14 +210,14 @@ export class SessionService {
 				) {
 					for (const teacherPayment of session.class.teacherPayments) {
 						if (teacherPayment.teacherId && teacherPayment.isActive) {
-							// Skip if payment amount is 0 or not set
-							const paymentAmount = parseFloat(teacherPayment.paymentAmount || "0");
-							if (paymentAmount <= 0) {
-								logger.warn(
-									`Skipping teacher payment creation for teacher ${teacherPayment.teacherId}, class ${session.class.id} - payment amount is 0`,
-								);
-								continue;
-							}
+                        // Skip if payment amount is 0 or not set
+                        const paymentAmount = parseFloat(teacherPayment.paymentAmount || "0");
+                        if (paymentAmount <= 0) {
+                            throw new Error(
+                                `Teacher payment configuration error: Teacher ${teacherPayment.teacherId} in class ${session.class.name} (ID: ${session.class.publicId}) has payment amount of ${paymentAmount}. ` +
+                                `Please configure the teacher payment amount in class settings.`
+                            );
+                        }
 
 							// Check if pending payment already exists for this cycle
 							const existingTeacherPayment =

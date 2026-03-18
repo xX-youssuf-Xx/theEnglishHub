@@ -360,6 +360,8 @@ export class CourseService {
     courseId: number;
     levelId: number;
     teacherId?: number;
+    teacherPaymentAmount?: number;
+    teacherPaymentCycle?: '4' | '8';
     schedules?: { dayOfWeek: number; startTime: string; endTime: string }[];
   }) {
     try {
@@ -386,13 +388,26 @@ export class CourseService {
 
       // Create classTeacherPayments record if teacher is assigned
       if (data.teacherId) {
+        const paymentAmount = data.teacherPaymentAmount || 0;
+        if (paymentAmount <= 0) {
+          logger.warn(
+            `Class ${newClass.publicId} created with teacher ${data.teacherId} but payment amount is ${paymentAmount}. ` +
+            `Please update the teacher payment configuration.`
+          );
+        }
+        
         await db.insert(classTeacherPayments).values({
           classId: newClass.id,
           teacherId: data.teacherId,
-          paymentAmount: '0',
-          paymentCycle: '4',
+          paymentAmount: paymentAmount.toString(),
+          paymentCycle: data.teacherPaymentCycle || '4',
           isActive: true,
         });
+        
+        logger.info(
+          `Created class ${newClass.publicId} with teacher ${data.teacherId}, ` +
+          `payment amount: ${paymentAmount}, cycle: ${data.teacherPaymentCycle || '4'}`
+        );
       }
 
       return {

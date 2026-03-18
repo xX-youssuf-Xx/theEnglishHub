@@ -263,6 +263,8 @@ export const courseRouter = router({
       name: z.string().min(3),
       levelId: z.string().uuid(),
       teacherId: z.string().uuid().optional(),
+      teacherPaymentAmount: z.number().min(0).optional(),
+      teacherPaymentCycle: z.enum(['4', '8']).optional(),
       schedules: z.array(z.object({
         dayOfWeek: z.number().min(0).max(6),
         startTime: z.string(),
@@ -270,7 +272,7 @@ export const courseRouter = router({
       })).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { courseId, levelId, teacherId, schedules, ...classData } = input;
+      const { courseId, levelId, teacherId, teacherPaymentAmount, teacherPaymentCycle, schedules, ...classData } = input;
       
       // Resolve UUIDs to IDs
       const course = await db.query.courses.findFirst({
@@ -288,7 +290,7 @@ export const courseRouter = router({
       let teacherIdNum: number | undefined;
       if (teacherId) {
         const teacher = await db.query.teachers.findFirst({
-          where: eq(classesSchema.publicId, teacherId),
+          where: eq(teachers.publicId, teacherId),
         });
         if (teacher) {
           teacherIdNum = teacher.id;
@@ -300,6 +302,8 @@ export const courseRouter = router({
         courseId: course.id,
         levelId: level.id,
         teacherId: teacherIdNum,
+        teacherPaymentAmount,
+        teacherPaymentCycle,
         schedules,
       });
     }),
