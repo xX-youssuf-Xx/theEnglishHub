@@ -400,12 +400,12 @@ export class StudentService {
       // Track initial enrollment in history
       await db.insert(enrollmentHistory).values({
         enrollmentId: enrollment.id,
-        previousClassId: null,
+        previousClassId: undefined,
         newClassId: data.classId,
-        previousLevelId: null,
+        previousLevelId: undefined,
         newLevelId: data.levelId,
         changeType: 'initial_enrollment',
-        changeDate: new Date(),
+        changeDate: new Date().toISOString().split('T')[0],
         notes: 'التسجيل الأولي في الكورس',
       });
 
@@ -647,7 +647,7 @@ export class StudentService {
         previousLevelId: enrollment.currentLevelId,
         newLevelId: enrollment.currentLevelId, // Same level, different class
         changeType: 'class_change',
-        changeDate: new Date(),
+        changeDate: new Date().toISOString().split('T')[0],
         notes: notes || 'تغيير الكلاس',
       });
 
@@ -716,7 +716,7 @@ export class StudentService {
         previousLevelId: previousLevelId,
         newLevelId: newLevelId,
         changeType: 'level_promotion',
-        changeDate: new Date(),
+        changeDate: new Date().toISOString().split('T')[0],
         notes: notes || 'الترقية إلى المستوى التالي',
       });
 
