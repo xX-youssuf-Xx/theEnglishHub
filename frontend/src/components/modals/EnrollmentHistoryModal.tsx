@@ -6,7 +6,7 @@ import {
 	History,
 	Loader2,
 	MapPin,
-	MoveRight,
+	MoveLeft,
 	Repeat,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -45,6 +45,12 @@ const changeTypeColors: Record<string, string> = {
 	initial_enrollment: "bg-primary/10 text-primary",
 	class_change: "bg-info/10 text-info",
 	level_promotion: "bg-success/10 text-success",
+};
+
+const changeTypeCardStyles: Record<string, string> = {
+	initial_enrollment: "border-primary/20 bg-primary/5",
+	class_change: "border-info/20 bg-info/5",
+	level_promotion: "border-success/20 bg-success/5",
 };
 
 const statusLabels: Record<string, string> = {
@@ -145,6 +151,17 @@ export function EnrollmentHistoryModal({
 			toast.error(err.message || "حدث خطأ أثناء إنهاء المستوى والانتقال"),
 	});
 
+	const completeCourseMutation = trpc.students.completeCourse.useMutation({
+		onSuccess: () => {
+			toast.success("تم إنهاء الكورس بنجاح، ويمكن تسجيل الطالب في كورس جديد");
+			if (studentId) {
+				utils.students.getCourseHistory.invalidate(studentId);
+			}
+			utils.students.getAll.invalidate();
+		},
+		onError: (err) => toast.error(err.message || "حدث خطأ أثناء إنهاء الكورس"),
+	});
+
 	const handleChangeClass = () => {
 		if (!studentId || !activeEnrollment || !changeClassId) return;
 		changeClassMutation.mutate({
@@ -163,6 +180,15 @@ export function EnrollmentHistoryModal({
 			newLevelId: nextLevel.id,
 			newClassId: nextLevelClassId,
 			notes: "إنهاء مستوى عبر سجل التسجيل",
+		});
+	};
+
+	const handleFinishCourse = () => {
+		if (!studentId || !activeEnrollment) return;
+		completeCourseMutation.mutate({
+			studentId,
+			enrollmentId: activeEnrollment.id,
+			notes: "إنهاء الكورس عند آخر مستوى",
 		});
 	};
 
@@ -254,9 +280,21 @@ export function EnrollmentHistoryModal({
 												</Button>
 											</>
 										) : (
-											<p className="text-sm text-text-muted">
-												لا يوجد مستوى أعلى متاح لهذا الكورس
-											</p>
+											<div className="space-y-2">
+												<p className="text-sm text-text-muted">
+													لا يوجد مستوى أعلى متاح لهذا الكورس
+												</p>
+												<Button
+													type="button"
+													variant="secondary"
+													onClick={handleFinishCourse}
+													disabled={completeCourseMutation.isPending}
+													className="w-full gap-2"
+												>
+													<CheckCircle className="w-4 h-4" />
+													إنهاء الكورس (آخر مستوى)
+												</Button>
+											</div>
 										)}
 									</div>
 								</div>
@@ -319,7 +357,7 @@ export function EnrollmentHistoryModal({
 												{enrollment.changes.map((change) => (
 													<div
 														key={change.id}
-														className="bg-muted/50 rounded-lg p-3 space-y-2"
+														className={`rounded-lg p-3 space-y-2 border ${changeTypeCardStyles[change.changeType] || "border-border bg-muted/50"}`}
 													>
 														<div className="flex items-center justify-between">
 															<Badge
@@ -333,24 +371,24 @@ export function EnrollmentHistoryModal({
 															</span>
 														</div>
 
-														<div className="flex items-center gap-4 text-sm">
+														<div className="flex items-center gap-2 text-sm" dir="ltr">
 															{change.previousClass && (
 																<div className="flex items-center gap-1 text-text-muted">
 																	<span>{change.previousClass.name}</span>
 																</div>
 															)}
-															<MoveRight className="w-4 h-4 text-primary" />
+															<MoveLeft className="w-4 h-4 text-primary" />
 															<div className="flex items-center gap-1 font-medium">
 																<span>{change.newClass.name}</span>
 															</div>
 														</div>
 
 														{change.previousLevel && (
-															<div className="flex items-center gap-4 text-sm">
+															<div className="flex items-center gap-2 text-sm" dir="ltr">
 																<div className="flex items-center gap-1 text-text-muted">
 																	<span>مستوى {change.previousLevel.levelNumber}</span>
 																</div>
-																<MoveRight className="w-4 h-4 text-primary" />
+																<MoveLeft className="w-4 h-4 text-primary" />
 																<div className="flex items-center gap-1 font-medium">
 																	<span>مستوى {change.newLevel.levelNumber}</span>
 																</div>
