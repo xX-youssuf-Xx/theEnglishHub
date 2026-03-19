@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { students, studentEnrollments, studentPayments, classes, courses, courseLevels, sessions, books, enrollmentHistory } from '../db/schema';
-import { eq, and, like, desc, sql, count } from 'drizzle-orm';
+import { eq, and, like, desc, sql, count, inArray } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 
 export class StudentService {
@@ -559,16 +559,41 @@ export class StudentService {
       for (const enrollment of enrollments) {
         const historyRows = await db.query.enrollmentHistory.findMany({
           where: eq(enrollmentHistory.enrollmentId, enrollment.id),
-          with: {
-            previousClass: true,
-            newClass: true,
-            previousLevel: true,
-            newLevel: true,
-          },
           orderBy: desc(enrollmentHistory.changeDate),
         });
 
-        historyByEnrollment.set(enrollment.id, historyRows);
+        const classIds = Array.from(new Set(
+          historyRows
+            .flatMap(h => [h.previousClassId, h.newClassId])
+            .filter((id): id is number => id !== null && id !== undefined)
+        ));
+
+        const levelIds = Array.from(new Set(
+          historyRows
+            .flatMap(h => [h.previousLevelId, h.newLevelId])
+            .filter((id): id is number => id !== null && id !== undefined)
+        ));
+
+        const relatedClasses = classIds.length > 0
+          ? await db.query.classes.findMany({ where: inArray(classes.id, classIds) })
+          : [];
+
+        const relatedLevels = levelIds.length > 0
+          ? await db.query.courseLevels.findMany({ where: inArray(courseLevels.id, levelIds) })
+          : [];
+
+        const classMap = new Map(relatedClasses.map(c => [c.id, c]));
+        const levelMap = new Map(relatedLevels.map(l => [l.id, l]));
+
+        const enrichedHistory = historyRows.map(h => ({
+          ...h,
+          previousClass: h.previousClassId ? classMap.get(h.previousClassId) || null : null,
+          newClass: h.newClassId ? classMap.get(h.newClassId) || null : null,
+          previousLevel: h.previousLevelId ? levelMap.get(h.previousLevelId) || null : null,
+          newLevel: h.newLevelId ? levelMap.get(h.newLevelId) || null : null,
+        }));
+
+        historyByEnrollment.set(enrollment.id, enrichedHistory);
       }
 
       return {
