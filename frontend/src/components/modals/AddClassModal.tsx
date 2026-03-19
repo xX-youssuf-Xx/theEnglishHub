@@ -1,4 +1,4 @@
-import { Clock, GraduationCap, Loader2, Plus, Users, X } from "lucide-react";
+import { GraduationCap, Loader2, Plus, Users, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -359,34 +359,30 @@ export function AddClassModal({
 									</Select>
 
 									<div className="relative">
-										<Input
-											type="time"
-											value={schedule.startTime}
-											onChange={(e) =>
-												handleScheduleChange(index, "startTime", e.target.value)
-											}
-											className="w-[140px] text-base pl-10 cursor-pointer"
-										/>
-										<div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-											<Clock className="w-4 h-4 text-text-muted" />
-										</div>
-									</div>
+									<Input
+										type="time"
+										step={900}
+										value={schedule.startTime}
+										onChange={(e) =>
+											handleScheduleChange(index, "startTime", e.target.value)
+										}
+										className="w-[140px] text-base cursor-pointer"
+									/>
+								</div>
 
 									<span className="text-text-muted px-1">إلى</span>
 
 									<div className="relative">
-										<Input
-											type="time"
-											value={schedule.endTime}
-											onChange={(e) =>
-												handleScheduleChange(index, "endTime", e.target.value)
-											}
-											className="w-[140px] text-base pl-10 cursor-pointer"
-										/>
-										<div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-											<Clock className="w-4 h-4 text-text-muted" />
-										</div>
-									</div>
+									<Input
+										type="time"
+										step={900}
+										value={schedule.endTime}
+										onChange={(e) =>
+											handleScheduleChange(index, "endTime", e.target.value)
+										}
+										className="w-[140px] text-base cursor-pointer"
+									/>
+								</div>
 
 									{formData.schedules.length > 1 && (
 										<Button

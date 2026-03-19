@@ -1,5 +1,5 @@
-import { BookOpen, Clock, Loader2, Users } from "lucide-react";
-import { useState } from "react";
+import { BookOpen, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +60,14 @@ export function EnrollInCourseModal({
 		{ enabled: !!selectedCourseId && !!selectedLevelId },
 	);
 	const availableClasses = classesData?.data ?? [];
+
+	useEffect(() => {
+		if (!isOpen) {
+			setSelectedCourseId("");
+			setSelectedLevelId("");
+			setSelectedClassId("");
+		}
+	}, [isOpen]);
 
 	const enrollMutation = trpc.students.enrollInCourse.useMutation({
 		onSuccess: () => {
@@ -124,6 +132,16 @@ export function EnrollInCourseModal({
 					`${daysOfWeek[s.dayOfWeek]} ${formatTime12h(s.startTime)}-${formatTime12h(s.endTime)}`,
 			)
 			.join("، ");
+	};
+
+	const getClassLabel = (cls: {
+		name: string;
+		teacher?: { fullName: string } | null;
+		schedules?: Array<{ dayOfWeek: number; startTime: string; endTime: string }>;
+	}) => {
+		const teacherName = cls.teacher?.fullName ? ` - ${cls.teacher.fullName}` : "";
+		const schedule = cls.schedules?.length ? ` - ${formatSchedule(cls.schedules)}` : "";
+		return `${cls.name}${teacherName}${schedule}`;
 	};
 
 	return (
@@ -210,34 +228,24 @@ export function EnrollInCourseModal({
 									}
 								/>
 							</SelectTrigger>
-							<SelectContent className="max-w-[400px]">
+							<SelectContent className="max-w-[460px]">
 								{availableClasses.map((cls) => (
 									<SelectItem key={cls.id} value={cls.id}>
-										<div className="flex flex-col items-start gap-0.5 py-1">
-											<span className="font-medium truncate">{cls.name}</span>
-											<div className="flex items-center gap-2 text-xs text-text-muted">
-												{cls.teacher && (
-													<span className="flex items-center gap-1 truncate">
-														<Users className="w-3 h-3 flex-shrink-0" />
-														<span className="truncate">
-															{cls.teacher.fullName}
-														</span>
-													</span>
-												)}
-												{cls.schedules && cls.schedules.length > 0 && (
-													<span className="flex items-center gap-1">
-														<Clock className="w-3 h-3 flex-shrink-0" />
-														<span className="truncate">
-															{formatSchedule(cls.schedules)}
-														</span>
-													</span>
-												)}
-											</div>
-										</div>
+										<span className="truncate max-w-[430px] block">
+											{getClassLabel(cls)}
+										</span>
 									</SelectItem>
 								))}
 							</SelectContent>
 						</Select>
+						{selectedClassId && (
+							<p className="text-xs text-text-muted mt-1">
+								{(() => {
+									const selected = availableClasses.find((c) => c.id === selectedClassId);
+									return selected ? getClassLabel(selected) : "";
+								})()}
+							</p>
+						)}
 					</div>
 
 					<div className="flex justify-end gap-2 pt-4">
