@@ -557,10 +557,33 @@ export class StudentService {
       const historyByEnrollment = new Map<number, any[]>();
 
       for (const enrollment of enrollments) {
-        const historyRows = await db.query.enrollmentHistory.findMany({
-          where: eq(enrollmentHistory.enrollmentId, enrollment.id),
-          orderBy: desc(enrollmentHistory.changeDate),
-        });
+        let historyRows: Array<{
+          id: number;
+          publicId: string;
+          enrollmentId: number;
+          previousClassId: number | null;
+          newClassId: number;
+          previousLevelId: number | null;
+          newLevelId: number;
+          changeType: string;
+          changeDate: string;
+          notes: string | null;
+          createdAt: Date;
+        }> = [];
+
+        try {
+          historyRows = await db.query.enrollmentHistory.findMany({
+            where: eq(enrollmentHistory.enrollmentId, enrollment.id),
+            orderBy: desc(enrollmentHistory.changeDate),
+          });
+        } catch (historyError: any) {
+          // If enrollment_history table is missing (migration not applied), do not fail full response
+          logger.warn(
+            `Enrollment history unavailable for enrollment ${enrollment.id}: ${historyError?.message || historyError}`,
+          );
+          historyByEnrollment.set(enrollment.id, []);
+          continue;
+        }
 
         const classIds = Array.from(new Set(
           historyRows
