@@ -1,4 +1,16 @@
-import { BookOpen, Calendar, GraduationCap, History, Loader2, MapPin, MoveRight, User, X } from "lucide-react";
+import {
+	BookOpen,
+	Calendar,
+	CheckCircle,
+	GraduationCap,
+	History,
+	Loader2,
+	MapPin,
+	MoveRight,
+	Repeat,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +19,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 
 interface EnrollmentHistoryModalProps {
@@ -46,11 +65,106 @@ export function EnrollmentHistoryModal({
 	open,
 	onOpenChange,
 }: EnrollmentHistoryModalProps) {
+	const utils = trpc.useUtils();
+	const [changeClassId, setChangeClassId] = useState("");
+	const [nextLevelClassId, setNextLevelClassId] = useState("");
+
 	const { data, isLoading } = trpc.students.getCourseHistory.useQuery(studentId || "", {
 		enabled: !!studentId && open,
 	});
 
 	const history = data?.history || [];
+	const activeEnrollment = history.find((e) => e.status === "active") || null;
+
+	const { data: levelsData } = trpc.courses.getLevels.useQuery(
+		{ courseId: activeEnrollment?.course?.id || "" },
+		{ enabled: !!activeEnrollment?.course?.id && open },
+	);
+	const levels = levelsData?.data || [];
+
+	const currentLevel = activeEnrollment
+		? levels.find((l) => l.id === activeEnrollment.level.id)
+		: null;
+	const nextLevel = useMemo(() => {
+		if (!activeEnrollment) return null;
+		return (
+			levels
+				.filter((l) => l.levelNumber > activeEnrollment.level.levelNumber)
+				.sort((a, b) => a.levelNumber - b.levelNumber)[0] || null
+		);
+	}, [activeEnrollment, levels]);
+
+	const { data: sameLevelClassesData } = trpc.classes.getByCourseAndLevel.useQuery(
+		{
+			courseId: activeEnrollment?.course?.id || "",
+			levelId: activeEnrollment?.level?.id || "",
+		},
+		{
+			enabled:
+				!!activeEnrollment?.course?.id && !!activeEnrollment?.level?.id && open,
+		},
+	);
+
+	const { data: nextLevelClassesData } = trpc.classes.getByCourseAndLevel.useQuery(
+		{
+			courseId: activeEnrollment?.course?.id || "",
+			levelId: nextLevel?.id || "",
+		},
+		{
+			enabled: !!activeEnrollment?.course?.id && !!nextLevel?.id && open,
+		},
+	);
+
+	const sameLevelClasses = (sameLevelClassesData?.data || []).filter(
+		(c) => c.id !== activeEnrollment?.class?.id,
+	);
+	const nextLevelClasses = nextLevelClassesData?.data || [];
+
+	const changeClassMutation = trpc.students.changeClass.useMutation({
+		onSuccess: () => {
+			toast.success("تم تغيير الكلاس بنجاح");
+			setChangeClassId("");
+			if (studentId) {
+				utils.students.getCourseHistory.invalidate(studentId);
+			}
+			utils.students.getAll.invalidate();
+		},
+		onError: (err) => toast.error(err.message || "حدث خطأ أثناء تغيير الكلاس"),
+	});
+
+	const advanceLevelMutation = trpc.students.advanceLevel.useMutation({
+		onSuccess: () => {
+			toast.success("تم إنهاء المستوى والانتقال للمستوى التالي بنجاح");
+			setNextLevelClassId("");
+			if (studentId) {
+				utils.students.getCourseHistory.invalidate(studentId);
+			}
+			utils.students.getAll.invalidate();
+		},
+		onError: (err) =>
+			toast.error(err.message || "حدث خطأ أثناء إنهاء المستوى والانتقال"),
+	});
+
+	const handleChangeClass = () => {
+		if (!studentId || !activeEnrollment || !changeClassId) return;
+		changeClassMutation.mutate({
+			studentId,
+			enrollmentId: activeEnrollment.id,
+			newClassId: changeClassId,
+			notes: "تغيير كلاس عبر سجل التسجيل",
+		});
+	};
+
+	const handleFinishLevel = () => {
+		if (!studentId || !activeEnrollment || !nextLevel || !nextLevelClassId) return;
+		advanceLevelMutation.mutate({
+			studentId,
+			enrollmentId: activeEnrollment.id,
+			newLevelId: nextLevel.id,
+			newClassId: nextLevelClassId,
+			notes: "إنهاء مستوى عبر سجل التسجيل",
+		});
+	};
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,6 +186,83 @@ export function EnrollmentHistoryModal({
 					</div>
 				) : (
 					<div className="h-[60vh] overflow-y-auto pr-4">
+						{activeEnrollment && (
+							<div className="mb-4 border rounded-lg p-4 bg-primary/5 space-y-3">
+								<div className="flex items-center justify-between">
+									<h4 className="font-semibold">إجراءات التسجيل النشط</h4>
+									<Badge className="bg-success/10 text-success">نشط</Badge>
+								</div>
+
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+									<div className="space-y-2">
+										<p className="text-sm font-medium">تغيير الكلاس (نفس المستوى)</p>
+										<Select value={changeClassId} onValueChange={setChangeClassId}>
+											<SelectTrigger>
+												<SelectValue placeholder="اختر كلاس بديل" />
+											</SelectTrigger>
+											<SelectContent>
+												{sameLevelClasses.map((cls) => (
+													<SelectItem key={cls.id} value={cls.id}>
+														{cls.name}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<Button
+											type="button"
+											variant="outline"
+											onClick={handleChangeClass}
+											disabled={!changeClassId || changeClassMutation.isPending}
+											className="w-full gap-2"
+										>
+											<Repeat className="w-4 h-4" />
+											تغيير الكلاس
+										</Button>
+									</div>
+
+									<div className="space-y-2">
+										<p className="text-sm font-medium">
+											إنهاء المستوى والانتقال
+										</p>
+										{nextLevel ? (
+											<>
+												<Select
+													value={nextLevelClassId}
+													onValueChange={setNextLevelClassId}
+												>
+													<SelectTrigger>
+														<SelectValue
+															placeholder={`اختر كلاس المستوى ${nextLevel.levelNumber}`}
+														/>
+													</SelectTrigger>
+													<SelectContent>
+														{nextLevelClasses.map((cls) => (
+															<SelectItem key={cls.id} value={cls.id}>
+																{cls.name}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+												<Button
+													type="button"
+													onClick={handleFinishLevel}
+													disabled={!nextLevelClassId || advanceLevelMutation.isPending}
+													className="w-full gap-2"
+												>
+													<CheckCircle className="w-4 h-4" />
+													إنهاء المستوى
+												</Button>
+											</>
+										) : (
+											<p className="text-sm text-text-muted">
+												لا يوجد مستوى أعلى متاح لهذا الكورس
+											</p>
+										)}
+									</div>
+								</div>
+							</div>
+						)}
+
 						<div className="space-y-6">
 							{history.map((enrollment, index) => (
 								<div

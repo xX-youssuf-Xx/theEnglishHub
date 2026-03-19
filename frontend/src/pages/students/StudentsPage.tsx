@@ -12,7 +12,6 @@ import {
 	Search,
 	Trash2,
 	User,
-	Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -21,7 +20,6 @@ import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationM
 import { EditStudentModal } from "@/components/modals/EditStudentModal";
 import { EnrollmentHistoryModal } from "@/components/modals/EnrollmentHistoryModal";
 import { EnrollInCourseModal } from "@/components/modals/EnrollInCourseModal";
-import { RecordPaymentModal } from "@/components/modals/RecordPaymentModal";
 import { ViewStudentModal } from "@/components/modals/ViewStudentModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,7 +49,6 @@ export function StudentsPage() {
 	const [addModalOpen, setAddModalOpen] = useState(false);
 	const [viewModalOpen, setViewModalOpen] = useState(false);
 	const [editModalOpen, setEditModalOpen] = useState(false);
-	const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [enrollModalOpen, setEnrollModalOpen] = useState(false);
 	const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -93,12 +90,6 @@ export function StudentsPage() {
 		setSelectedStudentId(studentId);
 		setSelectedStudentName(studentName);
 		setEditModalOpen(true);
-	};
-
-	const handleRecordPayment = (studentId: string, studentName: string) => {
-		setSelectedStudentId(studentId);
-		setSelectedStudentName(studentName);
-		setPaymentModalOpen(true);
 	};
 
 	const handleDelete = (studentId: string, studentName: string) => {
@@ -295,18 +286,6 @@ export function StudentsPage() {
 																				<span>سجل التسجيل</span>
 																				<History className="w-4 h-4" />
 																			</DropdownMenuItem>
-																			<DropdownMenuItem
-																				onClick={() =>
-																					handleRecordPayment(
-																						student.id,
-																						student.fullName,
-																					)
-																				}
-																				className="flex justify-end gap-1.5"
-																			>
-																				<span>تسجيل الدفع</span>
-																				<Wallet className="w-4 h-4" />
-																			</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleDelete(student.id, student.fullName)
@@ -372,12 +351,6 @@ export function StudentsPage() {
 				studentId={selectedStudentId}
 				open={editModalOpen}
 				onOpenChange={setEditModalOpen}
-			/>
-
-			<RecordPaymentModal
-				studentId={selectedStudentId}
-				open={paymentModalOpen}
-				onOpenChange={setPaymentModalOpen}
 			/>
 
 			<DeleteConfirmationModal

@@ -550,18 +550,26 @@ export class StudentService {
           course: true,
           class: true,
           currentLevel: true,
-          history: {
-            with: {
-              previousClass: true,
-              newClass: true,
-              previousLevel: true,
-              newLevel: true,
-            },
-            orderBy: desc(enrollmentHistory.changeDate),
-          },
         },
         orderBy: desc(studentEnrollments.createdAt),
       });
+
+      const historyByEnrollment = new Map<number, any[]>();
+
+      for (const enrollment of enrollments) {
+        const historyRows = await db.query.enrollmentHistory.findMany({
+          where: eq(enrollmentHistory.enrollmentId, enrollment.id),
+          with: {
+            previousClass: true,
+            newClass: true,
+            previousLevel: true,
+            newLevel: true,
+          },
+          orderBy: desc(enrollmentHistory.changeDate),
+        });
+
+        historyByEnrollment.set(enrollment.id, historyRows);
+      }
 
       return {
         studentId: student.publicId,
@@ -585,7 +593,7 @@ export class StudentService {
           completionDate: e.completionDate,
           finalGrade: e.finalGrade,
           notes: e.notes,
-          changes: e.history?.map(h => ({
+          changes: (historyByEnrollment.get(e.id) || []).map(h => ({
             id: h.publicId,
             changeType: h.changeType,
             changeDate: h.changeDate,
