@@ -83,34 +83,38 @@ export class StudentService {
       };
 
       return {
-        data: data.map(s => ({
-          id: s.publicId,
-          fullName: s.fullName,
-          age: s.age,
-          parentName: s.parentName,
-          parentPhone: s.parentPhone,
-          address: s.address,
-          emergencyContact: s.emergencyContact,
-          class: s.class ? {
-            id: s.class.publicId,
-            name: s.class.name,
-          } : null,
-          course: s.enrollments?.[0]?.course ? {
-            id: s.enrollments[0].course.publicId,
-            name: s.enrollments[0].course.name,
-          } : null,
-          currentLevel: s.enrollments?.[0]?.currentLevel ? {
-            id: s.enrollments[0].currentLevel.publicId,
-            levelNumber: s.enrollments[0].currentLevel.levelNumber,
-          } : null,
-          enrollments: s.enrollments?.map(e => ({
-            id: e.publicId,
-            courseId: e.courseId,
-            status: e.status,
-          })) || [],
-          paymentStatus: calculatePaymentStatus(s),
-          createdAt: s.createdAt,
-        })),
+        data: data.map(s => {
+          const activeEnrollment = s.enrollments?.find(e => e.status === 'active') || null;
+
+          return {
+            id: s.publicId,
+            fullName: s.fullName,
+            age: s.age,
+            parentName: s.parentName,
+            parentPhone: s.parentPhone,
+            address: s.address,
+            emergencyContact: s.emergencyContact,
+            class: s.class ? {
+              id: s.class.publicId,
+              name: s.class.name,
+            } : null,
+            course: activeEnrollment?.course ? {
+              id: activeEnrollment.course.publicId,
+              name: activeEnrollment.course.name,
+            } : null,
+            currentLevel: activeEnrollment?.currentLevel ? {
+              id: activeEnrollment.currentLevel.publicId,
+              levelNumber: activeEnrollment.currentLevel.levelNumber,
+            } : null,
+            enrollments: s.enrollments?.map(e => ({
+              id: e.publicId,
+              courseId: e.courseId,
+              status: e.status,
+            })) || [],
+            paymentStatus: calculatePaymentStatus(s),
+            createdAt: s.createdAt,
+          };
+        }),
         pagination: {
           page,
           limit,
