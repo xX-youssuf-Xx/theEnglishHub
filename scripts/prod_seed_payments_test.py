@@ -36,6 +36,99 @@ class ApiError(Exception):
     pass
 
 
+TEACHER_NAMES = [
+    "Ahmed Hassan",
+    "Mona Samir",
+    "Karim Nabil",
+    "Nour Ibrahim",
+    "Yasmine Farouk",
+    "Omar Adel",
+    "Salma Mostafa",
+    "Tarek Rashad",
+    "Hana Mahmoud",
+    "Fadi Khaled",
+]
+
+STUDENT_NAMES = [
+    "Lina Sami",
+    "Yousef Nasser",
+    "Mariam Gaber",
+    "Adam Hegazy",
+    "Farida Shawky",
+    "Ziad Helmy",
+    "Nada Sobhy",
+    "Hussein Kamal",
+    "Rana Badr",
+    "Basil Ezz",
+    "Jana Emad",
+    "Malek Saad",
+    "Tia Sherif",
+    "Rayan Tamer",
+    "Maya Lotfy",
+    "Kareem Rami",
+    "Reem Salah",
+    "Nadine Hazem",
+    "Sama Wael",
+    "Yassin Hani",
+]
+
+PARENT_NAMES = [
+    "Sami Hassan",
+    "Hoda Nabil",
+    "Mahmoud Adel",
+    "Rania Farouk",
+    "Sherif Kamal",
+    "Noha Emad",
+    "Ayman Salah",
+    "Dalia Hany",
+]
+
+COURSE_NAMES = [
+    "English Conversation",
+    "Grammar Foundations",
+    "Reading Skills",
+    "Writing Workshop",
+    "Vocabulary Builder",
+    "Speaking Fluency",
+    "Listening Lab",
+    "Academic English",
+]
+
+CLASS_NAMES = [
+    "Morning Circle",
+    "Sunrise Group",
+    "Bridge Group",
+    "Focus Group",
+    "Summit Group",
+    "Horizon Group",
+    "Discovery Group",
+    "Crescent Group",
+    "Pioneer Group",
+    "Evergreen Group",
+]
+
+LABELS = [
+    "Alpha",
+    "Bravo",
+    "Charlie",
+    "Delta",
+    "Echo",
+    "Foxtrot",
+    "Gamma",
+    "Helios",
+    "Indigo",
+    "Jade",
+]
+
+
+def _pick_name(pool: List[str], idx: int) -> str:
+    base = pool[idx % len(pool)]
+    if idx < len(pool):
+        return base
+    suffix = LABELS[(idx // len(pool) - 1) % len(LABELS)]
+    return f"{base} {suffix}"
+
+
 def _unwrap_result_data(result_data: Any) -> Any:
     # tRPC may return either data directly or data.json
     if isinstance(result_data, dict) and "json" in result_data:
@@ -161,11 +254,12 @@ def create_teachers(
 ) -> List[Dict[str, str]]:
     teachers = []
     for i in range(1, count + 1):
+        full_name = _pick_name(TEACHER_NAMES, i - 1)
         payload = {
-            "fullName": f"Seed {run_tag} Teacher {i}",
+            "fullName": full_name,
             "phone": f"010{run_tag[-4:]}{i:03d}",
-            "email": f"seed.teacher.{run_tag}.{i}@example.com",
-            "address": "Seed Address",
+            "email": f"teacher.{run_tag}.{i}@example.com",
+            "address": "City Center",
         }
         data = client.trpc_call("teachers.create", token, payload)
         teachers.append({"id": data["id"], "name": payload["fullName"]})
@@ -187,10 +281,11 @@ def create_courses_levels_classes(
 
     class_counter = 1
     for course_idx in range(1, course_count + 1):
+        course_name = _pick_name(COURSE_NAMES, course_idx - 1)
         course_payload = {
-            "name": f"Seed {run_tag} Course {course_idx}",
-            "description": f"Seeded course {course_idx} run {run_tag}",
-            "syllabus": "Seed syllabus",
+            "name": course_name,
+            "description": "Practice-driven English learning track",
+            "syllabus": "Conversation, grammar, reading, and writing",
             "sessionsPerMonth": 4,
         }
         course_data = client.trpc_call("courses.create", token, course_payload)
@@ -204,6 +299,16 @@ def create_courses_levels_classes(
                 "durationMonths": 4,
                 "pricePerMonth": 250,
                 "description": f"Level {level_num}",
+                "books": [
+                    {
+                        "name": f"Workbook {level_num}",
+                        "price": 120,
+                    },
+                    {
+                        "name": f"Reader {level_num}",
+                        "price": 80,
+                    },
+                ],
             }
             level_data = client.trpc_call("courses.addLevel", token, level_payload)
             levels.append({"id": level_data["id"], "levelNumber": level_num})
@@ -216,7 +321,7 @@ def create_courses_levels_classes(
 
             class_payload = {
                 "courseId": course_id,
-                "name": f"Seed {run_tag} C{course_idx}-Class {class_idx}",
+                "name": _pick_name(CLASS_NAMES, class_counter - 1),
                 "levelId": level["id"],
                 "teacherId": teacher["id"],
                 "teacherPaymentAmount": teacher_payment_amount,
@@ -263,12 +368,14 @@ def create_students(
 ) -> List[Dict[str, str]]:
     students = []
     for i in range(1, count + 1):
+        student_name = _pick_name(STUDENT_NAMES, i - 1)
+        parent_name = _pick_name(PARENT_NAMES, i - 1)
         payload = {
-            "fullName": f"Seed {run_tag} Student {i}",
+            "fullName": student_name,
             "age": 12 + (i % 8),
-            "parentName": f"Parent {run_tag}-{i}",
+            "parentName": parent_name,
             "parentPhone": f"011{run_tag[-4:]}{i:03d}",
-            "address": "Seed Student Address",
+            "address": "City Center",
             "emergencyContact": f"012{run_tag[-4:]}{i:03d}",
         }
         data = client.trpc_call("students.create", token, payload)
@@ -355,9 +462,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Seed payment test data via API")
     parser.add_argument(
         "--base-url",
-        default=os.getenv(
-            "SEED_BASE_URL", "https://englishhub.8bitsolutions.net/api/trpc"
-        ),
+        default=os.getenv("SEED_BASE_URL", "https://englishhub.8bitsolutions.net"),
         help="Backend base URL",
     )
     parser.add_argument(

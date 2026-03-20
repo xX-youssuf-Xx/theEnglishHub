@@ -87,6 +87,7 @@ export const courseRouter = router({
 				with: {
 					levels: {
 						with: {
+							books: true,
 							prerequisites: {
 								with: {
 									prerequisiteLevel: true,
@@ -102,18 +103,24 @@ export const courseRouter = router({
 			}
 
 			return {
-				data:
-					course.levels?.map((level) => ({
-						id: level.publicId,
-						levelNumber: level.levelNumber,
-						durationMonths: level.durationMonths,
-						pricePerMonth: level.pricePerMonth,
-						description: level.description,
-						prerequisites:
-							level.prerequisites?.map((p) => ({
-								id: p.prerequisiteLevel.publicId,
-								levelNumber: p.prerequisiteLevel.levelNumber,
-							})) || [],
+					data:
+						course.levels?.map((level) => ({
+							id: level.publicId,
+							levelNumber: level.levelNumber,
+							durationMonths: level.durationMonths,
+							pricePerMonth: level.pricePerMonth,
+							description: level.description,
+							books:
+								level.books?.map((b) => ({
+									id: b.publicId,
+									name: b.name,
+									price: b.price,
+								})) || [],
+							prerequisites:
+								level.prerequisites?.map((p) => ({
+									id: p.prerequisiteLevel.publicId,
+									levelNumber: p.prerequisiteLevel.levelNumber,
+								})) || [],
 					})) || [],
 			};
 		}),
@@ -126,6 +133,14 @@ export const courseRouter = router({
 				durationMonths: z.number().int().positive().default(4),
 				pricePerMonth: z.number().positive().optional(),
 				description: z.string().optional(),
+				books: z
+					.array(
+						z.object({
+							name: z.string().min(1),
+							price: z.number().positive(),
+						}),
+					)
+					.optional(),
 				prerequisiteLevelIds: z.array(z.string().uuid()).optional(),
 			}),
 		)
