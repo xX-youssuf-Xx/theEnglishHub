@@ -1,7 +1,7 @@
-import { 
-  pgTable, 
-  serial, 
-  uuid, 
+import {
+  pgTable,
+  serial,
+  uuid,
   varchar, 
   text, 
   integer, 
@@ -14,8 +14,10 @@ import {
   jsonb,
   primaryKey,
   unique,
+  uniqueIndex,
   pgEnum
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
 
 // Enums
@@ -201,7 +203,9 @@ export const studentEnrollments = pgTable('student_enrollments', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
-  uniqueActiveStudent: unique().on(table.studentId, table.status), // Only one active enrollment per student
+  uniqueActiveStudent: uniqueIndex('student_enrollments_one_active_idx')
+    .on(table.studentId)
+    .where(sql`${table.status} = 'active'`),
 }));
 
 // Enrollment History table - tracks class/level changes within an enrollment
