@@ -32,6 +32,9 @@ export function DashboardPage() {
 			month: selectedMonth,
 		});
 
+	const { data: pendingByCourse, isLoading: isLoadingPendingByCourse } =
+		trpc.payments.getPendingPaymentsByCourse.useQuery();
+
 	const {
 		data: currentMonthFinancialSummary,
 		isLoading: isLoadingCurrentMonthSummary,
@@ -59,6 +62,12 @@ export function DashboardPage() {
 		],
 		[monthlyFinancialSummary],
 	);
+
+	const totalPendingStudentPayments = useMemo(() => {
+		return (pendingByCourse?.data || []).reduce((sum, course) => {
+			return sum + (course.paymentCount || 0);
+		}, 0);
+	}, [pendingByCourse]);
 
 	if (error) {
 		return (
@@ -196,7 +205,7 @@ export function DashboardPage() {
 								</div>
 							</div>
 							<span className="text-2xl font-bold">
-								{isLoadingStats ? "..." : (stats?.pendingPaymentsCount ?? 0)}
+								{isLoadingPendingByCourse ? "..." : totalPendingStudentPayments}
 							</span>
 						</div>
 					</CardContent>

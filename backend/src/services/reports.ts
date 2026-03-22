@@ -461,27 +461,12 @@ export class ReportService {
 					),
 				);
 
-			// Pending payments count - count students with pending payment status
-			const pendingPaymentsResult = await db
-				.select({ count: count() })
-				.from(students)
-				.where(
-					and(
-						eq(students.isActive, true),
-						sql`EXISTS (
-              SELECT 1 FROM student_payments sp 
-              WHERE sp.student_id = ${students.id} 
-              AND sp.status = 'pending'
-            )`,
-					),
-				);
-
 			return {
 				month: resolvedMonth,
 				totalActiveStudents: activeStudents[0]?.count || 0,
 				totalActiveTeachers: activeTeachers[0]?.count || 0,
 				monthlyIncome: parseFloat(monthlyIncome[0]?.total || "0"),
-				pendingPaymentsCount: pendingPaymentsResult[0]?.count || 0,
+				pendingPaymentsCount: 0,
 			};
 		} catch (error) {
 			logger.error("Get dashboard stats error:", error);
