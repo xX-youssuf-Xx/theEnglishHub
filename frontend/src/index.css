@@ -2,23 +2,23 @@
 @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap");
 
 @theme inline {
-  --color-primary: #8B5CF6;
-  --color-primary-dark: #6D28D9;
-  --color-primary-light: #C4B5FD;
-  --color-accent-cyan: #22D3EE;
-  --color-accent-gold: #FBBF24;
-  --color-accent-coral: #F87171;
-  --color-background-page: #F8F7FF;
-  --color-background-card: #FFFFFF;
-  --color-background-sidebar: #2E1065;
-  --color-border-divider: #E9E5F5;
-  --color-text-heading: #1E1B4B;
-  --color-text-body: #4B5563;
-  --color-text-muted: #9CA3AF;
-  --color-success: #34D399;
-  --color-warning: #FBBF24;
-  --color-error: #F87171;
-  --color-info: #22D3EE;
+	--color-primary: #8b5cf6;
+	--color-primary-dark: #6d28d9;
+	--color-primary-light: #c4b5fd;
+	--color-accent-cyan: #22d3ee;
+	--color-accent-gold: #fbbf24;
+	--color-accent-coral: #f87171;
+	--color-background-page: #f8f7ff;
+	--color-background-card: #ffffff;
+	--color-background-sidebar: #2e1065;
+	--color-border-divider: #e9e5f5;
+	--color-text-heading: #1e1b4b;
+	--color-text-body: #4b5563;
+	--color-text-muted: #9ca3af;
+	--color-success: #34d399;
+	--color-warning: #fbbf24;
+	--color-error: #f87171;
+	--color-info: #22d3ee;
 }
 
 :root {

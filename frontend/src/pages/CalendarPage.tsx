@@ -11,6 +11,7 @@ import {
 import { ar } from "date-fns/locale";
 import {
 	Calendar as CalendarIcon,
+	Check,
 	CheckCircle,
 	ChevronLeft,
 	ChevronRight,
@@ -69,6 +70,10 @@ interface Session {
 	};
 	attendanceCount: number;
 	totalStudents: number;
+	monthlyStats?: {
+		completed: number;
+		total: number;
+	};
 }
 
 export function CalendarPage() {
@@ -76,6 +81,9 @@ export function CalendarPage() {
 	const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
 		null,
 	);
+	const [selectedSlotSessions, setSelectedSlotSessions] = useState<
+		Session[] | null
+	>(null);
 
 	const startOfCurrentWeek = startOfWeek(currentWeek, { weekStartsOn: 0 });
 	const endOfCurrentWeek = endOfWeek(currentWeek, { weekStartsOn: 0 });
@@ -136,7 +144,11 @@ export function CalendarPage() {
 		generateSessionsMutation.mutate();
 	};
 
-	const handleSessionClick = (sessionId: string) => {
+	const handleSessionClick = (sessionId: string, slotSessions: Session[]) => {
+		if (slotSessions.length > 1) {
+			setSelectedSlotSessions(slotSessions);
+			return;
+		}
 		setSelectedSessionId(sessionId);
 	};
 
@@ -174,6 +186,9 @@ export function CalendarPage() {
 			return sessionHour === hour;
 		});
 	};
+
+	const getMonthlyCompletion = (session: Session) =>
+		session.monthlyStats || { completed: 0, total: 0 };
 
 	const getSessionStyle = (session: Session) => {
 		if (!session.startTime || !session.endTime) return {};
@@ -228,7 +243,7 @@ export function CalendarPage() {
 						) : (
 							<RefreshCw className="w-4 h-4" />
 						)}
-						إنشاء حصص (أسبوعين)
+						إنشاء حصص هذا الشهر
 					</Button>
 
 					<Button variant="outline" size="icon" onClick={handleNextWeek}>
@@ -314,11 +329,36 @@ export function CalendarPage() {
 														key={hour}
 														className="h-16 border-b relative group hover:bg-gray-50 transition-colors"
 													>
-														{getSessionsForSlot(dayIndex, hour).map(
-															(session: Session) => (
+														{(() => {
+															const slotSessions = getSessionsForSlot(
+																dayIndex,
+																hour,
+															);
+															if (slotSessions.length === 0) return null;
+															if (slotSessions.length > 1) {
+																return (
+																	<div
+																		className="absolute inset-x-1 inset-y-1 rounded-md p-2 text-xs border shadow-sm cursor-pointer hover:shadow-md transition-shadow bg-violet-500 text-white border-violet-600"
+																		onClick={() =>
+																			setSelectedSlotSessions(slotSessions)
+																		}
+																	>
+																		<div className="font-semibold">
+																			{slotSessions.length} حصص متداخلة
+																		</div>
+																		<div className="opacity-90">
+																			اضغط لعرض التفاصيل
+																		</div>
+																	</div>
+																);
+															}
+
+															return slotSessions.map((session: Session) => (
 																<div
 																	key={session.id}
-																	onClick={() => handleSessionClick(session.id)}
+																	onClick={() =>
+																		handleSessionClick(session.id, slotSessions)
+																	}
 																	className={`absolute inset-x-1 rounded-md p-2 text-xs border shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden ${getStatusColor(session.status)}`}
 																	style={getSessionStyle(session)}
 																>
@@ -341,8 +381,11 @@ export function CalendarPage() {
 																	)}
 																	<div className="flex items-center gap-1 mt-1 opacity-80">
 																		<CheckCircle className="w-3 h-3" />
-																		{session.attendanceCount}/
-																		{session.totalStudents}
+																		{(() => {
+																			const monthly =
+																				getMonthlyCompletion(session);
+																			return `${monthly.completed}/${monthly.total}`;
+																		})()}
 																	</div>
 
 																	{session.status === "scheduled" && (
@@ -379,8 +422,8 @@ export function CalendarPage() {
 																		</DropdownMenu>
 																	)}
 																</div>
-															),
-														)}
+															));
+														})()}
 													</div>
 												))}
 											</div>
@@ -567,6 +610,61 @@ export function CalendarPage() {
 							)}
 						</div>
 					) : null}
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={!!selectedSlotSessions}
+				onOpenChange={() => setSelectedSlotSessions(null)}
+			>
+				<DialogContent className="max-w-xl" dir="rtl">
+					<DialogHeader>
+						<DialogTitle>الحصص في نفس التوقيت</DialogTitle>
+						<DialogDescription>
+							يمكنك فتح أي حصة أو تحديدها كمكتملة مباشرة
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-2 max-h-[60vh] overflow-y-auto">
+						{selectedSlotSessions?.map((session) => (
+							<div
+								key={session.id}
+								className="p-3 rounded-lg border bg-muted/30 flex items-center justify-between gap-3"
+							>
+								<div>
+									<p className="font-medium">
+										{session.class?.course} - {session.class?.name}
+									</p>
+									<p className="text-sm text-text-muted">
+										{session.startTime?.slice(0, 5)} -{" "}
+										{session.endTime?.slice(0, 5)}
+									</p>
+								</div>
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => {
+											setSelectedSlotSessions(null);
+											setSelectedSessionId(session.id);
+										}}
+									>
+										عرض
+									</Button>
+									{session.status === "scheduled" && (
+										<Button
+											size="sm"
+											onClick={() => handleMarkComplete(session.id)}
+											disabled={markCompleteMutation.isPending}
+											className="gap-1"
+										>
+											<Check className="w-3 h-3" />
+											مكتملة
+										</Button>
+									)}
+								</div>
+							</div>
+						))}
+					</div>
 				</DialogContent>
 			</Dialog>
 		</div>

@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray, like } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import {
 	books,
@@ -11,7 +11,6 @@ import {
 	levelPrerequisites,
 	sessions,
 	studentEnrollments,
-	teachers,
 } from "../db/schema";
 import { logger } from "../utils/logger";
 
@@ -524,7 +523,6 @@ export class CourseService {
 						});
 					}
 				}
-
 			}
 
 			return {

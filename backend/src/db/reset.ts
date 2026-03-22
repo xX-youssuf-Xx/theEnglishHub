@@ -1,22 +1,22 @@
-import { Client } from 'pg';
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
+import { Client } from "pg";
 
 dotenv.config();
 
 const dbUrl = process.env.DATABASE_URL!;
 
 async function resetDatabase() {
-  const client = new Client({
-    connectionString: dbUrl,
-  });
+	const client = new Client({
+		connectionString: dbUrl,
+	});
 
-  try {
-    await client.connect();
-    console.log('Connected to database');
+	try {
+		await client.connect();
+		console.log("Connected to database");
 
-    // Drop all tables in reverse order of dependencies
-    console.log('Dropping existing tables...');
-    await client.query(`
+		// Drop all tables in reverse order of dependencies
+		console.log("Dropping existing tables...");
+		await client.query(`
       DROP TABLE IF EXISTS 
         audit_logs,
         student_session_attendance,
@@ -42,9 +42,9 @@ async function resetDatabase() {
       CASCADE;
     `);
 
-    // Drop types
-    console.log('Dropping existing types...');
-    await client.query(`
+		// Drop types
+		console.log("Dropping existing types...");
+		await client.query(`
       DROP TYPE IF EXISTS 
         enrollment_status,
         session_status,
@@ -55,13 +55,13 @@ async function resetDatabase() {
       CASCADE;
     `);
 
-    console.log('Database reset complete!');
-  } catch (error) {
-    console.error('Error resetting database:', error);
-    process.exit(1);
-  } finally {
-    await client.end();
-  }
+		console.log("Database reset complete!");
+	} catch (error) {
+		console.error("Error resetting database:", error);
+		process.exit(1);
+	} finally {
+		await client.end();
+	}
 }
 
 resetDatabase();

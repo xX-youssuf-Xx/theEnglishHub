@@ -75,9 +75,12 @@ export function EnrollmentHistoryModal({
 	const [changeClassId, setChangeClassId] = useState("");
 	const [nextLevelClassId, setNextLevelClassId] = useState("");
 
-	const { data, isLoading } = trpc.students.getCourseHistory.useQuery(studentId || "", {
-		enabled: !!studentId && open,
-	});
+	const { data, isLoading } = trpc.students.getCourseHistory.useQuery(
+		studentId || "",
+		{
+			enabled: !!studentId && open,
+		},
+	);
 
 	const history = data?.history || [];
 	const activeEnrollment = history.find((e) => e.status === "active") || null;
@@ -88,7 +91,7 @@ export function EnrollmentHistoryModal({
 	);
 	const levels = levelsData?.data || [];
 
-	const currentLevel = activeEnrollment
+	const _currentLevel = activeEnrollment
 		? levels.find((l) => l.id === activeEnrollment.level.id)
 		: null;
 	const nextLevel = useMemo(() => {
@@ -100,26 +103,30 @@ export function EnrollmentHistoryModal({
 		);
 	}, [activeEnrollment, levels]);
 
-	const { data: sameLevelClassesData } = trpc.classes.getByCourseAndLevel.useQuery(
-		{
-			courseId: activeEnrollment?.course?.id || "",
-			levelId: activeEnrollment?.level?.id || "",
-		},
-		{
-			enabled:
-				!!activeEnrollment?.course?.id && !!activeEnrollment?.level?.id && open,
-		},
-	);
+	const { data: sameLevelClassesData } =
+		trpc.classes.getByCourseAndLevel.useQuery(
+			{
+				courseId: activeEnrollment?.course?.id || "",
+				levelId: activeEnrollment?.level?.id || "",
+			},
+			{
+				enabled:
+					!!activeEnrollment?.course?.id &&
+					!!activeEnrollment?.level?.id &&
+					open,
+			},
+		);
 
-	const { data: nextLevelClassesData } = trpc.classes.getByCourseAndLevel.useQuery(
-		{
-			courseId: activeEnrollment?.course?.id || "",
-			levelId: nextLevel?.id || "",
-		},
-		{
-			enabled: !!activeEnrollment?.course?.id && !!nextLevel?.id && open,
-		},
-	);
+	const { data: nextLevelClassesData } =
+		trpc.classes.getByCourseAndLevel.useQuery(
+			{
+				courseId: activeEnrollment?.course?.id || "",
+				levelId: nextLevel?.id || "",
+			},
+			{
+				enabled: !!activeEnrollment?.course?.id && !!nextLevel?.id && open,
+			},
+		);
 
 	const sameLevelClasses = (sameLevelClassesData?.data || []).filter(
 		(c) => c.id !== activeEnrollment?.class?.id,
@@ -173,13 +180,14 @@ export function EnrollmentHistoryModal({
 	};
 
 	const handleFinishLevel = () => {
-		if (!studentId || !activeEnrollment || !nextLevel || !nextLevelClassId) return;
+		if (!studentId || !activeEnrollment || !nextLevel || !nextLevelClassId)
+			return;
 		advanceLevelMutation.mutate({
 			studentId,
 			enrollmentId: activeEnrollment.id,
 			newLevelId: nextLevel.id,
 			newClassId: nextLevelClassId,
-			notes: "إنهاء مستوى عبر سجل التسجيل",
+			notes: undefined,
 		});
 	};
 
@@ -221,8 +229,13 @@ export function EnrollmentHistoryModal({
 
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 									<div className="space-y-2">
-										<p className="text-sm font-medium">تغيير الكلاس (نفس المستوى)</p>
-										<Select value={changeClassId} onValueChange={setChangeClassId}>
+										<p className="text-sm font-medium">
+											تغيير الكلاس (نفس المستوى)
+										</p>
+										<Select
+											value={changeClassId}
+											onValueChange={setChangeClassId}
+										>
 											<SelectTrigger>
 												<SelectValue placeholder="اختر كلاس بديل" />
 											</SelectTrigger>
@@ -272,7 +285,9 @@ export function EnrollmentHistoryModal({
 												<Button
 													type="button"
 													onClick={handleFinishLevel}
-													disabled={!nextLevelClassId || advanceLevelMutation.isPending}
+													disabled={
+														!nextLevelClassId || advanceLevelMutation.isPending
+													}
 													className="w-full gap-2"
 												>
 													<CheckCircle className="w-4 h-4" />
@@ -302,7 +317,7 @@ export function EnrollmentHistoryModal({
 						)}
 
 						<div className="space-y-6">
-							{history.map((enrollment, index) => (
+							{history.map((enrollment, _index) => (
 								<div
 									key={enrollment.id}
 									className="border rounded-lg p-4 space-y-4"
@@ -319,9 +334,9 @@ export function EnrollmentHistoryModal({
 												</h3>
 												<div className="flex items-center gap-2 text-sm text-text-muted">
 													<Calendar className="w-4 h-4" />
-													{new Date(enrollment.enrollmentDate).toLocaleDateString(
-														"ar-EG"
-													)}
+													{new Date(
+														enrollment.enrollmentDate,
+													).toLocaleDateString("ar-EG")}
 												</div>
 											</div>
 										</div>
@@ -335,7 +350,9 @@ export function EnrollmentHistoryModal({
 										<div className="flex items-center gap-2">
 											<MapPin className="w-4 h-4 text-text-muted" />
 											<span className="text-sm text-text-muted">الكلاس:</span>
-											<span className="font-medium">{enrollment.class.name}</span>
+											<span className="font-medium">
+												{enrollment.class.name}
+											</span>
 										</div>
 										<div className="flex items-center gap-2">
 											<GraduationCap className="w-4 h-4 text-text-muted" />
@@ -349,10 +366,10 @@ export function EnrollmentHistoryModal({
 									{/* Changes History */}
 									{enrollment.changes && enrollment.changes.length > 0 && (
 										<div className="space-y-3">
-														<h4 className="font-medium text-sm text-text-muted flex items-center gap-2">
-															<History className="w-4 h-4" />
-															سجل التغييرات
-														</h4>
+											<h4 className="font-medium text-sm text-text-muted flex items-center gap-2">
+												<History className="w-4 h-4" />
+												سجل التغييرات
+											</h4>
 											<div className="space-y-2">
 												{enrollment.changes.map((change) => (
 													<div
@@ -367,38 +384,50 @@ export function EnrollmentHistoryModal({
 																{changeTypeLabels[change.changeType]}
 															</Badge>
 															<span className="text-xs text-text-muted">
-																{new Date(change.changeDate).toLocaleDateString("ar-EG")}
+																{new Date(change.changeDate).toLocaleDateString(
+																	"ar-EG",
+																)}
 															</span>
 														</div>
 
-														<div className="flex items-center gap-2 text-sm" dir="ltr">
-															{change.previousClass && (
-																<div className="flex items-center gap-1 text-text-muted">
-																	<span>{change.previousClass.name}</span>
+														<div
+															className="flex items-center gap-2 text-sm justify-end"
+															dir="rtl"
+														>
+															{change.previousClass ? (
+																<>
+																	<div className="flex items-center gap-1 font-medium">
+																		<span>{change.newClass.name}</span>
+																	</div>
+																	<MoveLeft className="w-4 h-4 text-primary" />
+																	<div className="flex items-center gap-1 text-text-muted">
+																		<span>{change.previousClass.name}</span>
+																	</div>
+																</>
+															) : (
+																<div className="flex items-center gap-1 font-medium">
+																	<span>{change.newClass.name}</span>
 																</div>
 															)}
-															<MoveLeft className="w-4 h-4 text-primary" />
-															<div className="flex items-center gap-1 font-medium">
-																<span>{change.newClass.name}</span>
-															</div>
 														</div>
 
 														{change.previousLevel && (
-															<div className="flex items-center gap-2 text-sm" dir="ltr">
-																<div className="flex items-center gap-1 text-text-muted">
-																	<span>مستوى {change.previousLevel.levelNumber}</span>
+															<div
+																className="flex items-center gap-2 text-sm justify-end"
+																dir="rtl"
+															>
+																<div className="flex items-center gap-1 font-medium">
+																	<span>
+																		مستوى {change.newLevel.levelNumber}
+																	</span>
 																</div>
 																<MoveLeft className="w-4 h-4 text-primary" />
-																<div className="flex items-center gap-1 font-medium">
-																	<span>مستوى {change.newLevel.levelNumber}</span>
+																<div className="flex items-center gap-1 text-text-muted">
+																	<span>
+																		مستوى {change.previousLevel.levelNumber}
+																	</span>
 																</div>
 															</div>
-														)}
-
-														{change.notes && (
-															<p className="text-xs text-text-muted mt-2">
-																{change.notes}
-															</p>
 														)}
 													</div>
 												))}
@@ -413,14 +442,20 @@ export function EnrollmentHistoryModal({
 												<span className="text-text-muted">تاريخ الإكمال:</span>
 												<span>
 													{enrollment.completionDate
-														? new Date(enrollment.completionDate).toLocaleDateString("ar-EG")
+														? new Date(
+																enrollment.completionDate,
+															).toLocaleDateString("ar-EG")
 														: "-"}
 												</span>
 											</div>
 											{enrollment.finalGrade && (
 												<div className="flex items-center justify-between text-sm mt-1">
-													<span className="text-text-muted">التقدير النهائي:</span>
-													<Badge variant="outline">{enrollment.finalGrade}</Badge>
+													<span className="text-text-muted">
+														التقدير النهائي:
+													</span>
+													<Badge variant="outline">
+														{enrollment.finalGrade}
+													</Badge>
 												</div>
 											)}
 										</div>

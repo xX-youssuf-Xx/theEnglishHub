@@ -102,6 +102,17 @@ export function ManageTeacherClassesModal({
 		},
 	});
 
+	const updateAssignmentMutation =
+		trpc.teachers.updateClassAssignment.useMutation({
+			onSuccess: () => {
+				utils.teachers.getClassesByCourse.invalidate(teacherId || "");
+				toast.success("تم تحديث تفاصيل الكلاس بنجاح");
+			},
+			onError: (err) => {
+				toast.error(err.message || "حدث خطأ أثناء تحديث تفاصيل الكلاس");
+			},
+		});
+
 	const resetAddForm = () => {
 		setSelectedCourseId("");
 		setSelectedClassId("");
@@ -129,6 +140,27 @@ export function ManageTeacherClassesModal({
 		removeMutation.mutate({
 			teacherId,
 			classId,
+		});
+	};
+
+	const handleUpdateAssignment = (
+		classId: string,
+		paymentAmountValue: string,
+		paymentCycleValue: "4" | "8",
+	) => {
+		if (!teacherId) return;
+
+		const parsedAmount = Number(paymentAmountValue);
+		if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+			toast.error("قيمة المبلغ غير صحيحة");
+			return;
+		}
+
+		updateAssignmentMutation.mutate({
+			teacherId,
+			classId,
+			paymentAmount: parsedAmount,
+			paymentCycle: paymentCycleValue,
 		});
 	};
 
@@ -393,6 +425,41 @@ export function ManageTeacherClassesModal({
 																			{cls.paymentAmount} جنيه / كل{" "}
 																			{cls.paymentCycle} حصص
 																		</p>
+																		<div className="mt-2 grid grid-cols-2 gap-2">
+																			<Input
+																				type="number"
+																				defaultValue={cls.paymentAmount}
+																				onBlur={(e) => {
+																					handleUpdateAssignment(
+																						cls.id,
+																						e.target.value,
+																						cls.paymentCycle,
+																					);
+																				}}
+																			/>
+																			<Select
+																				defaultValue={cls.paymentCycle}
+																				onValueChange={(value: "4" | "8") => {
+																					handleUpdateAssignment(
+																						cls.id,
+																						String(cls.paymentAmount),
+																						value,
+																					);
+																				}}
+																			>
+																				<SelectTrigger className="h-9">
+																					<SelectValue />
+																				</SelectTrigger>
+																				<SelectContent>
+																					<SelectItem value="4">
+																						كل 4 حصص
+																					</SelectItem>
+																					<SelectItem value="8">
+																						كل 8 حصص
+																					</SelectItem>
+																				</SelectContent>
+																			</Select>
+																		</div>
 																	</div>
 																</div>
 																<Button

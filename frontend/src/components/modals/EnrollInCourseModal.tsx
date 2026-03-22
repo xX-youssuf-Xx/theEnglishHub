@@ -137,10 +137,18 @@ export function EnrollInCourseModal({
 	const getClassLabel = (cls: {
 		name: string;
 		teacher?: { fullName: string } | null;
-		schedules?: Array<{ dayOfWeek: number; startTime: string; endTime: string }>;
+		schedules?: Array<{
+			dayOfWeek: number;
+			startTime: string;
+			endTime: string;
+		}>;
 	}) => {
-		const teacherName = cls.teacher?.fullName ? ` - ${cls.teacher.fullName}` : "";
-		const schedule = cls.schedules?.length ? ` - ${formatSchedule(cls.schedules)}` : "";
+		const teacherName = cls.teacher?.fullName
+			? ` - ${cls.teacher.fullName}`
+			: "";
+		const schedule = cls.schedules?.length
+			? ` - ${formatSchedule(cls.schedules)}`
+			: "";
 		return `${cls.name}${teacherName}${schedule}`;
 	};
 
@@ -241,7 +249,9 @@ export function EnrollInCourseModal({
 						{selectedClassId && (
 							<p className="text-xs text-text-muted mt-1">
 								{(() => {
-									const selected = availableClasses.find((c) => c.id === selectedClassId);
+									const selected = availableClasses.find(
+										(c) => c.id === selectedClassId,
+									);
 									return selected ? getClassLabel(selected) : "";
 								})()}
 							</p>

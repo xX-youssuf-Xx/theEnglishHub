@@ -36,10 +36,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { trpc } from "@/lib/trpc";
 
 export function TeachersPage() {
 	const [searchQuery, setSearchQuery] = useState("");
+	const debouncedSearchQuery = useDebouncedValue(searchQuery, 400);
 	const [page, setPage] = useState(1);
 	const limit = 10;
 
@@ -58,7 +60,7 @@ export function TeachersPage() {
 	const { data, isLoading, error } = trpc.teachers.getAll.useQuery({
 		page,
 		limit,
-		search: searchQuery || undefined,
+		search: debouncedSearchQuery || undefined,
 	});
 
 	const utils = trpc.useUtils();
@@ -77,8 +79,8 @@ export function TeachersPage() {
 	});
 
 	const teachers = data?.data ?? [];
-	const total = data?.total ?? 0;
-	const totalPages = Math.ceil(total / limit);
+	const total = data?.pagination?.total ?? 0;
+	const totalPages = data?.pagination?.totalPages ?? 1;
 
 	const handleView = (teacherId: string) => {
 		setSelectedTeacherId(teacherId);

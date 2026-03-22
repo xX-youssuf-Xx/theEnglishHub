@@ -5,11 +5,11 @@ import {
 	DollarSign,
 	GraduationCap,
 	Loader2,
-	Plus,
 	TrendingDown,
 	TrendingUp,
 	Users,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,6 +85,8 @@ function StatCard({
 const COLORS = ["#34D399", "#FBBF24", "#F87171"];
 
 export function DashboardPage() {
+	const navigate = useNavigate();
+
 	const {
 		data: stats,
 		isLoading: isLoadingStats,
@@ -131,11 +133,7 @@ export function DashboardPage() {
 					<p className="text-text-muted mt-1">نظرة عامة على أداء المركز</p>
 				</div>
 				<div className="flex gap-2">
-					<Button variant="outline" className="gap-2">
-						<Plus className="w-4 h-4" />
-						طالب جديد
-					</Button>
-					<Button className="gap-2">
+					<Button className="gap-2" onClick={() => navigate("/payments")}>
 						<CreditCard className="w-4 h-4" />
 						تسجيل دفعة
 					</Button>
@@ -163,8 +161,8 @@ export function DashboardPage() {
 					icon={<AlertCircle className="w-6 h-6 text-warning" />}
 				/>
 				<StatCard
-					title="دفعات المعلمين"
-					value={0}
+					title="ملخص مالي"
+					value={`${(stats?.monthlyIncome ?? 0).toLocaleString()} ج.م`}
 					isLoading={isLoadingStats}
 					icon={<CreditCard className="w-6 h-6 text-accent-coral" />}
 				/>
@@ -181,7 +179,7 @@ export function DashboardPage() {
 				{/* Payment Status Distribution */}
 				<Card>
 					<CardHeader>
-						<CardTitle>حالة المدفوعات</CardTitle>
+						<CardTitle>ملخص مالي</CardTitle>
 						<CardDescription>توزيع حالات المدفوعات بين الطلاب</CardDescription>
 					</CardHeader>
 					<CardContent>

@@ -48,9 +48,6 @@ export function PaymentDetailsModal({
 	};
 
 	const getStatusBadge = () => {
-		if (payment.type === "expense") {
-			return <Badge variant="default">تم التسجيل</Badge>;
-		}
 		return payment.status === "paid" ? (
 			<Badge variant="success">تم السداد</Badge>
 		) : (

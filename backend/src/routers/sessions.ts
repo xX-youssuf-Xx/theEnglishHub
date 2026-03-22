@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { auditService } from "../services/audit";
 import { sessionService } from "../services/sessions";
 import { protectedProcedure, publicProcedure, router } from "../trpc/context";
 
@@ -24,9 +25,24 @@ export const sessionRouter = router({
 			}),
 		)
 		.mutation(async ({ input, ctx }) => {
-			// ctx.user should contain the current user info
-			const userId = 1; // TODO: Get from ctx
-			return sessionService.markSessionComplete(input.sessionId, userId);
+			const userId = ctx.user.id;
+			const result = await sessionService.markSessionComplete(
+				input.sessionId,
+				userId,
+			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "mark_session_complete",
+				entityType: "session",
+				newValues: {
+					sessionId: input.sessionId,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	markAttendance: protectedProcedure

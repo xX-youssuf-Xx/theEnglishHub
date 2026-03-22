@@ -13,11 +13,11 @@ import { CalendarPage } from "@/pages/CalendarPage";
 import { CoursesPage } from "@/pages/courses/CoursesPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { LogsPage } from "@/pages/logs/LogsPage";
 import { PaymentsPage } from "@/pages/payments/PaymentsPage";
-import { ReportsPage } from "@/pages/reports/ReportsPage";
-import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { StudentsPage } from "@/pages/students/StudentsPage";
 import { TeachersPage } from "@/pages/teachers/TeachersPage";
+import { UsersPage } from "@/pages/users/UsersPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { isAuthenticated, isLoading } = useAuth();
@@ -37,6 +37,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	return <MainLayout>{children}</MainLayout>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+	const { user } = useAuth();
+
+	if (user?.role === "assistant") {
+		return <Navigate to="/students" replace />;
+	}
+
+	return <>{children}</>;
+}
+
+function HomeRedirect() {
+	const { user } = useAuth();
+	return (
+		<Navigate
+			to={user?.role === "assistant" ? "/students" : "/dashboard"}
+			replace
+		/>
+	);
+}
+
 function AppRoutes() {
 	return (
 		<Routes>
@@ -45,7 +65,9 @@ function AppRoutes() {
 				path="/dashboard"
 				element={
 					<ProtectedRoute>
-						<DashboardPage />
+						<AdminRoute>
+							<DashboardPage />
+						</AdminRoute>
 					</ProtectedRoute>
 				}
 			/>
@@ -61,7 +83,9 @@ function AppRoutes() {
 				path="/teachers"
 				element={
 					<ProtectedRoute>
-						<TeachersPage />
+						<AdminRoute>
+							<TeachersPage />
+						</AdminRoute>
 					</ProtectedRoute>
 				}
 			/>
@@ -69,7 +93,9 @@ function AppRoutes() {
 				path="/courses"
 				element={
 					<ProtectedRoute>
-						<CoursesPage />
+						<AdminRoute>
+							<CoursesPage />
+						</AdminRoute>
 					</ProtectedRoute>
 				}
 			/>
@@ -77,7 +103,9 @@ function AppRoutes() {
 				path="/calendar"
 				element={
 					<ProtectedRoute>
-						<CalendarPage />
+						<AdminRoute>
+							<CalendarPage />
+						</AdminRoute>
 					</ProtectedRoute>
 				}
 			/>
@@ -90,23 +118,27 @@ function AppRoutes() {
 				}
 			/>
 			<Route
-				path="/reports"
+				path="/users"
 				element={
 					<ProtectedRoute>
-						<ReportsPage />
+						<AdminRoute>
+							<UsersPage />
+						</AdminRoute>
 					</ProtectedRoute>
 				}
 			/>
 			<Route
-				path="/settings"
+				path="/logs"
 				element={
 					<ProtectedRoute>
-						<SettingsPage />
+						<AdminRoute>
+							<LogsPage />
+						</AdminRoute>
 					</ProtectedRoute>
 				}
 			/>
-			<Route path="/" element={<Navigate to="/dashboard" replace />} />
-			<Route path="*" element={<Navigate to="/dashboard" replace />} />
+			<Route path="/" element={<HomeRedirect />} />
+			<Route path="*" element={<HomeRedirect />} />
 		</Routes>
 	);
 }

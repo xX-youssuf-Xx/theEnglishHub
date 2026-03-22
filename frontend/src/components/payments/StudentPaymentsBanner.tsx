@@ -11,6 +11,15 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { fuzzyIncludes } from "@/lib/search";
 import { trpc } from "@/lib/trpc";
 
 interface StudentPaymentsBannerProps {
@@ -48,11 +57,16 @@ export function StudentPaymentsBanner({
 		payments: CourseGroupedPayment["payments"];
 	} | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [paymentTypeFilter, setPaymentTypeFilter] = useState<
+		"all" | "tuition" | "books"
+	>("all");
+	const [confirmPaymentId, setConfirmPaymentId] = useState<string | null>(null);
+	const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
 
 	const { data, isLoading } = trpc.payments.getPendingPaymentsByCourse.useQuery(
 		undefined,
 		{
-			enabled: isCoursesModalOpen,
+			enabled: true,
 		},
 	);
 
@@ -92,12 +106,15 @@ export function StudentPaymentsBanner({
 
 	// Filter payments by search query
 	const filteredPayments = selectedCourse?.payments.filter((payment) => {
-		if (!searchQuery) return true;
-		const query = searchQuery.toLowerCase();
-		return (
-			payment.student?.fullName?.toLowerCase().includes(query) ||
-			payment.class?.name?.toLowerCase().includes(query)
-		);
+		const searchMatches =
+			!debouncedSearchQuery ||
+			fuzzyIncludes(payment.student?.fullName, debouncedSearchQuery) ||
+			fuzzyIncludes(payment.class?.name, debouncedSearchQuery);
+
+		const typeMatches =
+			paymentTypeFilter === "all" || payment.type === paymentTypeFilter;
+
+		return searchMatches && typeMatches;
 	});
 
 	return (
@@ -140,9 +157,9 @@ export function StudentPaymentsBanner({
 
 			{/* Courses List Modal */}
 			<Dialog open={isCoursesModalOpen} onOpenChange={setIsCoursesModalOpen}>
-				<DialogContent className="max-w-2xl" dir="rtl">
+				<DialogContent className="max-w-3xl" dir="rtl">
 					<DialogHeader>
-						<DialogTitle className="flex items-center gap-2">
+						<DialogTitle className="flex items-center gap-2 text-xl">
 							<BookOpen className="w-6 h-6" />
 							الكورسات ذات الدفعات المعلقة
 						</DialogTitle>
@@ -157,13 +174,13 @@ export function StudentPaymentsBanner({
 							لا يوجد كورسات لديها دفعات معلقة
 						</div>
 					) : (
-						<div className="space-y-3 max-h-[60vh] overflow-y-auto">
+						<div className="grid gap-3 md:grid-cols-2 max-h-[60vh] overflow-y-auto">
 							{courses.map((course) =>
 								course.course ? (
 									<button
 										key={course.course.id}
 										type="button"
-										className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+										className="flex items-center justify-between p-4 border rounded-xl hover:bg-muted/40 cursor-pointer transition-colors"
 										onClick={() => handleCourseClick(course)}
 										onKeyDown={(e) => {
 											if (e.key === "Enter" || e.key === " ") {
@@ -203,7 +220,7 @@ export function StudentPaymentsBanner({
 				open={!!selectedCourse}
 				onOpenChange={() => setSelectedCourse(null)}
 			>
-				<DialogContent className="max-w-3xl" dir="rtl">
+				<DialogContent className="max-w-4xl" dir="rtl">
 					<DialogHeader>
 						<DialogTitle className="flex items-center justify-between">
 							<span>دفعات طلاب {selectedCourse?.courseName}</span>
@@ -220,14 +237,31 @@ export function StudentPaymentsBanner({
 					{selectedCourse && (
 						<div className="space-y-4">
 							{/* Search */}
-							<div className="relative">
-								<Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-								<Input
-									placeholder="البحث باسم الطالب أو الكلاس..."
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									className="pr-10"
-								/>
+							<div className="grid md:grid-cols-2 gap-3">
+								<div className="relative">
+									<Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+									<Input
+										placeholder="البحث باسم الطالب أو الكلاس..."
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										className="pr-10"
+									/>
+								</div>
+								<Select
+									value={paymentTypeFilter}
+									onValueChange={(value: "all" | "tuition" | "books") =>
+										setPaymentTypeFilter(value)
+									}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="نوع الدفعة" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all">الكل</SelectItem>
+										<SelectItem value="tuition">رسوم التسجيل</SelectItem>
+										<SelectItem value="books">رسوم الكتب</SelectItem>
+									</SelectContent>
+								</Select>
 							</div>
 
 							{/* Payments List */}
@@ -276,7 +310,7 @@ export function StudentPaymentsBanner({
 												</div>
 												<Button
 													size="sm"
-													onClick={() => handleSettle(payment.id)}
+													onClick={() => setConfirmPaymentId(payment.id)}
 													disabled={settleMutation.isPending}
 												>
 													{settleMutation.isPending ? (
@@ -309,6 +343,36 @@ export function StudentPaymentsBanner({
 							</div>
 						</div>
 					)}
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={!!confirmPaymentId}
+				onOpenChange={() => setConfirmPaymentId(null)}
+			>
+				<DialogContent dir="rtl">
+					<DialogHeader>
+						<DialogTitle>تأكيد التسوية</DialogTitle>
+					</DialogHeader>
+					<p className="text-sm text-text-muted">
+						هل تريد تسوية هذه الدفعة الآن؟
+					</p>
+					<div className="flex items-center justify-end gap-2 mt-4">
+						<Button variant="outline" onClick={() => setConfirmPaymentId(null)}>
+							إلغاء
+						</Button>
+						<Button
+							onClick={() => {
+								if (confirmPaymentId) {
+									handleSettle(confirmPaymentId);
+								}
+								setConfirmPaymentId(null);
+							}}
+							disabled={settleMutation.isPending}
+						>
+							تأكيد
+						</Button>
+					</div>
 				</DialogContent>
 			</Dialog>
 		</>

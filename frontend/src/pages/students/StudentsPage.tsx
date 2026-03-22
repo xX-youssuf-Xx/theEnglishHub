@@ -18,8 +18,8 @@ import { toast } from "sonner";
 import { AddStudentModal } from "@/components/modals/AddStudentModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import { EditStudentModal } from "@/components/modals/EditStudentModal";
-import { EnrollmentHistoryModal } from "@/components/modals/EnrollmentHistoryModal";
 import { EnrollInCourseModal } from "@/components/modals/EnrollInCourseModal";
+import { EnrollmentHistoryModal } from "@/components/modals/EnrollmentHistoryModal";
 import { ViewStudentModal } from "@/components/modals/ViewStudentModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,10 +38,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { trpc } from "@/lib/trpc";
 
 export function StudentsPage() {
 	const [searchQuery, setSearchQuery] = useState("");
+	const debouncedSearchQuery = useDebouncedValue(searchQuery, 400);
 	const [page, setPage] = useState(1);
 	const limit = 10;
 
@@ -60,12 +62,12 @@ export function StudentsPage() {
 	const { data, isLoading, error } = trpc.students.getAll.useQuery({
 		page,
 		limit,
-		search: searchQuery || undefined,
+		search: debouncedSearchQuery || undefined,
 	});
 
 	const students = data?.data ?? [];
-	const total = data?.total ?? 0;
-	const totalPages = Math.ceil(total / limit);
+	const total = data?.pagination?.total ?? 0;
+	const totalPages = data?.pagination?.totalPages ?? 1;
 
 	const utils = trpc.useUtils();
 	const deleteMutation = trpc.students.delete.useMutation({
@@ -168,14 +170,14 @@ export function StudentsPage() {
 							<>
 								<Table>
 									<TableHeader>
-									<TableRow>
-										<TableHead>الطالب</TableHead>
-										<TableHead>ولي الأمر</TableHead>
-										<TableHead>الكورس</TableHead>
-										<TableHead>الكلاس</TableHead>
-										<TableHead>تاريخ التسجيل</TableHead>
-										<TableHead className="text-left">الإجراءات</TableHead>
-									</TableRow>
+										<TableRow>
+											<TableHead>الطالب</TableHead>
+											<TableHead>ولي الأمر</TableHead>
+											<TableHead>الكورس</TableHead>
+											<TableHead>الكلاس</TableHead>
+											<TableHead>تاريخ التسجيل</TableHead>
+											<TableHead className="text-left">الإجراءات</TableHead>
+										</TableRow>
 									</TableHeader>
 									<TableBody>
 										{students.length === 0 ? (
@@ -268,24 +270,27 @@ export function StudentsPage() {
 																	<span>تعديل</span>
 																	<Edit className="w-4 h-4" />
 																</DropdownMenuItem>
-																			<DropdownMenuItem
-																				onClick={() =>
-																					handleEnroll(student.id, student.fullName)
-																				}
-																				className="flex justify-end gap-1.5"
-																			>
-																				<span>تسجيل في كورس</span>
-																				<GraduationCap className="w-4 h-4" />
-																			</DropdownMenuItem>
-																			<DropdownMenuItem
-																				onClick={() =>
-																					handleViewHistory(student.id, student.fullName)
-																				}
-																				className="flex justify-end gap-1.5"
-																			>
-																				<span>سجل التسجيل</span>
-																				<History className="w-4 h-4" />
-																			</DropdownMenuItem>
+																<DropdownMenuItem
+																	onClick={() =>
+																		handleEnroll(student.id, student.fullName)
+																	}
+																	className="flex justify-end gap-1.5"
+																>
+																	<span>تسجيل في كورس</span>
+																	<GraduationCap className="w-4 h-4" />
+																</DropdownMenuItem>
+																<DropdownMenuItem
+																	onClick={() =>
+																		handleViewHistory(
+																			student.id,
+																			student.fullName,
+																		)
+																	}
+																	className="flex justify-end gap-1.5"
+																>
+																	<span>سجل التسجيل</span>
+																	<History className="w-4 h-4" />
+																</DropdownMenuItem>
 																<DropdownMenuItem
 																	onClick={() =>
 																		handleDelete(student.id, student.fullName)

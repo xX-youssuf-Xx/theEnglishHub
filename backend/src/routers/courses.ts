@@ -1,10 +1,9 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db";
 import {
 	classes as classesSchema,
 	courseLevels,
-	coursePrerequisites,
 	courses as coursesSchema,
 	teachers,
 } from "../db/schema";
@@ -103,24 +102,24 @@ export const courseRouter = router({
 			}
 
 			return {
-					data:
-						course.levels?.map((level) => ({
-							id: level.publicId,
-							levelNumber: level.levelNumber,
-							durationMonths: level.durationMonths,
-							pricePerMonth: level.pricePerMonth,
-							description: level.description,
-							books:
-								level.books?.map((b) => ({
-									id: b.publicId,
-									name: b.name,
-									price: b.price,
-								})) || [],
-							prerequisites:
-								level.prerequisites?.map((p) => ({
-									id: p.prerequisiteLevel.publicId,
-									levelNumber: p.prerequisiteLevel.levelNumber,
-								})) || [],
+				data:
+					course.levels?.map((level) => ({
+						id: level.publicId,
+						levelNumber: level.levelNumber,
+						durationMonths: level.durationMonths,
+						pricePerMonth: level.pricePerMonth,
+						description: level.description,
+						books:
+							level.books?.map((b) => ({
+								id: b.publicId,
+								name: b.name,
+								price: b.price,
+							})) || [],
+						prerequisites:
+							level.prerequisites?.map((p) => ({
+								id: p.prerequisiteLevel.publicId,
+								levelNumber: p.prerequisiteLevel.levelNumber,
+							})) || [],
 					})) || [],
 			};
 		}),
@@ -259,19 +258,19 @@ export const courseRouter = router({
 							id: cls.level.publicId,
 							levelNumber: cls.level.levelNumber,
 						},
-					teacher: cls.teacher
-						? {
-								id: cls.teacher.publicId,
-								fullName: cls.teacher.fullName,
-							}
-						: null,
-					teacherPayment: cls.teacherPayments?.[0]
-						? {
-								amount: cls.teacherPayments[0].paymentAmount,
-								cycle: cls.teacherPayments[0].paymentCycle,
-							}
-						: null,
-					schedules:
+						teacher: cls.teacher
+							? {
+									id: cls.teacher.publicId,
+									fullName: cls.teacher.fullName,
+								}
+							: null,
+						teacherPayment: cls.teacherPayments?.[0]
+							? {
+									amount: cls.teacherPayments[0].paymentAmount,
+									cycle: cls.teacherPayments[0].paymentCycle,
+								}
+							: null,
+						schedules:
 							cls.schedules
 								?.filter((s) => s.isActive)
 								.map((s) => ({

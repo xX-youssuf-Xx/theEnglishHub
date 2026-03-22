@@ -42,6 +42,9 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { fuzzyIncludes } from "@/lib/search";
 import { trpc } from "@/lib/trpc";
 
 interface PaymentHistoryItem {
@@ -67,13 +70,19 @@ type PaymentType = "all" | "student" | "teacher" | "expense";
 type StudentPaymentType = "all" | "tuition" | "books";
 
 export function PaymentsPage() {
+	const { user } = useAuth();
+	const isAssistant = user?.role === "assistant";
+
 	const [page, setPage] = useState(1);
-	const [filterType, setFilterType] = useState<PaymentType>("all");
+	const [filterType, setFilterType] = useState<PaymentType>(
+		isAssistant ? "student" : "all",
+	);
 	const [studentFilterType, setStudentFilterType] =
 		useState<StudentPaymentType>("all");
 	const [startDate, setStartDate] = useState<string>("");
 	const [endDate, setEndDate] = useState<string>("");
 	const [searchQuery, setSearchQuery] = useState("");
+	const debouncedSearchQuery = useDebouncedValue(searchQuery, 350);
 	const limit = 10;
 
 	// Payment details modal state
@@ -105,7 +114,7 @@ export function PaymentsPage() {
 		trpc.payments.getPaymentHistory.useQuery({
 			page,
 			limit,
-			type: filterType,
+			type: isAssistant ? "student" : filterType,
 			startDate: effectiveStartDate,
 			endDate: effectiveEndDate,
 		});
@@ -142,27 +151,41 @@ export function PaymentsPage() {
 		});
 	};
 
+	const resetFilters = () => {
+		setFilterType(isAssistant ? "student" : "all");
+		setStudentFilterType("all");
+		setSearchQuery("");
+		setStartDate("");
+		setEndDate("");
+		setPage(1);
+	};
+
 	// Filter payments based on search and student payment type
 	const allPayments = paymentHistory?.data || [];
 	const filteredPayments = allPayments.filter((payment) => {
+		if (
+			isAssistant &&
+			(payment.type === "teacher" || payment.type === "expense")
+		) {
+			return false;
+		}
+
 		// Filter by search query
-		if (searchQuery) {
-			const query = searchQuery.toLowerCase();
-			const personName = payment.person?.name?.toLowerCase() || "";
-			const className = payment.class?.name?.toLowerCase() || "";
-			const courseName = payment.course?.name?.toLowerCase() || "";
-			if (
-				!personName.includes(query) &&
-				!className.includes(query) &&
-				!courseName.includes(query)
-			) {
-				return false;
-			}
+		if (debouncedSearchQuery) {
+			const matches =
+				fuzzyIncludes(payment.person?.name, debouncedSearchQuery) ||
+				fuzzyIncludes(payment.class?.name, debouncedSearchQuery) ||
+				fuzzyIncludes(payment.course?.name, debouncedSearchQuery);
+			if (!matches) return false;
 		}
 
 		// Filter student payments by type
 		if (payment.type === "student" && studentFilterType !== "all") {
 			return payment.subType === studentFilterType;
+		}
+
+		if (filterType === "student" && payment.type !== "student") {
+			return false;
 		}
 
 		return true;
@@ -202,19 +225,25 @@ export function PaymentsPage() {
 						إدارة دفعات الطلاب والمعلمين والمصروفات
 					</p>
 				</div>
-				<Button onClick={() => setIsExpenseModalOpen(true)} className="gap-2">
-					<Plus className="w-4 h-4" />
-					تسجيل مصروفات
-				</Button>
+				{!isAssistant ? (
+					<Button onClick={() => setIsExpenseModalOpen(true)} className="gap-2">
+						<Plus className="w-4 h-4" />
+						تسجيل مصروفات
+					</Button>
+				) : (
+					<div />
+				)}
 			</div>
 
 			{/* Pending Payments Banners */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<TeacherPaymentsBanner
-					onRefresh={() => {
-						utils.payments.getPaymentHistory.invalidate();
-					}}
-				/>
+				{!isAssistant && (
+					<TeacherPaymentsBanner
+						onRefresh={() => {
+							utils.payments.getPaymentHistory.invalidate();
+						}}
+					/>
+				)}
 				<StudentPaymentsBanner
 					onRefresh={() => {
 						utils.payments.getPaymentHistory.invalidate();
@@ -243,6 +272,7 @@ export function PaymentsPage() {
 									setFilterType(value as PaymentType);
 									setPage(1);
 								}}
+								disabled={isAssistant}
 							>
 								<SelectTrigger className="w-[180px]">
 									<SelectValue placeholder="نوع الدفعة" />
@@ -250,12 +280,16 @@ export function PaymentsPage() {
 								<SelectContent>
 									<SelectItem value="all">الكل</SelectItem>
 									<SelectItem value="student">دفعات الطلاب</SelectItem>
-									<SelectItem value="teacher">دفعات المعلمين</SelectItem>
-									<SelectItem value="expense">المصروفات</SelectItem>
+									{!isAssistant && (
+										<>
+											<SelectItem value="teacher">دفعات المعلمين</SelectItem>
+											<SelectItem value="expense">المصروفات</SelectItem>
+										</>
+									)}
 								</SelectContent>
 							</Select>
 
-							{filterType === "student" && (
+							{(filterType === "student" || isAssistant) && (
 								<Select
 									value={studentFilterType}
 									onValueChange={(value) => {
@@ -268,7 +302,7 @@ export function PaymentsPage() {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="all">الكل</SelectItem>
-										<SelectItem value="tuition">رسوم دراسية</SelectItem>
+										<SelectItem value="tuition">رسوم التسجيل</SelectItem>
 										<SelectItem value="books">رسوم كتب</SelectItem>
 									</SelectContent>
 								</Select>
@@ -294,6 +328,10 @@ export function PaymentsPage() {
 									className="w-[140px]"
 								/>
 							</div>
+
+							<Button variant="outline" onClick={resetFilters}>
+								إعادة ضبط
+							</Button>
 						</div>
 					</div>
 				</CardContent>
@@ -391,17 +429,13 @@ export function PaymentsPage() {
 													</div>
 												</TableCell>
 												<TableCell>
-													{payment.type !== "expense" && (
-														<Badge
-															variant={
-																payment.status === "paid"
-																	? "success"
-																	: "warning"
-															}
-														>
-															{payment.status === "paid" ? "تم السداد" : "معلق"}
-														</Badge>
-													)}
+													<Badge
+														variant={
+															payment.status === "paid" ? "success" : "warning"
+														}
+													>
+														{payment.status === "paid" ? "تم السداد" : "معلق"}
+													</Badge>
 												</TableCell>
 											</TableRow>
 										))
@@ -443,7 +477,10 @@ export function PaymentsPage() {
 			</Card>
 
 			{/* Record Expense Dialog */}
-			<Dialog open={isExpenseModalOpen} onOpenChange={setIsExpenseModalOpen}>
+			<Dialog
+				open={isExpenseModalOpen && !isAssistant}
+				onOpenChange={setIsExpenseModalOpen}
+			>
 				<DialogContent dir="rtl">
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">

@@ -1,9 +1,8 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
 	classes,
 	classTeacherPayments,
-	courseLevels,
 	courses,
 	sessions,
 	studentEnrollments,
@@ -17,11 +16,14 @@ import { logger } from "../utils/logger";
 export class SessionService {
 	async getWeeklySchedule(startDate: Date, endDate: Date) {
 		try {
+			const startDateStr = startDate.toISOString().split("T")[0];
+			const endDateStr = endDate.toISOString().split("T")[0];
+
 			// Get all sessions in the date range
 			const sessionsData = await db.query.sessions.findMany({
 				where: and(
-					gte(sessions.sessionDate, startDate),
-					lte(sessions.sessionDate, endDate),
+					gte(sessions.sessionDate, startDateStr),
+					lte(sessions.sessionDate, endDateStr),
 				),
 				with: {
 					class: {
@@ -43,6 +45,48 @@ export class SessionService {
 				},
 				orderBy: [sessions.sessionDate, sessions.startTime],
 			});
+
+			const classIds = Array.from(
+				new Set(sessionsData.map((session) => session.classId)),
+			);
+			const monthStart = new Date(
+				startDate.getFullYear(),
+				startDate.getMonth(),
+				1,
+			);
+			const monthEnd = new Date(
+				startDate.getFullYear(),
+				startDate.getMonth() + 1,
+				0,
+			);
+			const monthStartStr = monthStart.toISOString().split("T")[0];
+			const monthEndStr = monthEnd.toISOString().split("T")[0];
+
+			const monthlySessions = classIds.length
+				? await db.query.sessions.findMany({
+						where: and(
+							inArray(sessions.classId, classIds),
+							gte(sessions.sessionDate, monthStartStr),
+							lte(sessions.sessionDate, monthEndStr),
+						),
+					})
+				: [];
+
+			const monthlyByClass = new Map<
+				number,
+				{ total: number; completed: number }
+			>();
+			for (const monthlySession of monthlySessions) {
+				const current = monthlyByClass.get(monthlySession.classId) || {
+					total: 0,
+					completed: 0,
+				};
+				current.total += 1;
+				if (monthlySession.status === "completed") {
+					current.completed += 1;
+				}
+				monthlyByClass.set(monthlySession.classId, current);
+			}
 
 			// Group by day of week
 			const scheduleByDay = [0, 1, 2, 3, 4, 5, 6].map((day) => ({
@@ -73,6 +117,10 @@ export class SessionService {
 					attendanceCount:
 						session.attendance?.filter((a) => a.attended).length || 0,
 					totalStudents: session.attendance?.length || 0,
+					monthlyStats: monthlyByClass.get(session.classId) || {
+						total: 0,
+						completed: 0,
+					},
 				});
 			});
 
@@ -509,7 +557,7 @@ export class SessionService {
 						if (!existingSession) {
 							sessionsToCreate.push({
 								classId: classData.id,
-								sessionDate: new Date(currentDate),
+								sessionDate: dateStr,
 								startTime: schedule.startTime,
 								endTime: schedule.endTime,
 								status: "scheduled",

@@ -1,5 +1,4 @@
 import {
-	BarChart3,
 	BookOpen,
 	Calendar,
 	ChevronLeft,
@@ -8,6 +7,7 @@ import {
 	GraduationCap,
 	LayoutDashboard,
 	LogOut,
+	Logs,
 	Settings,
 	Users,
 	X,
@@ -43,8 +43,8 @@ const navItems: NavItem[] = [
 	{ path: "/teachers", label: "المعلمين", icon: GraduationCap },
 	{ path: "/courses", label: "الكورسات", icon: BookOpen },
 	{ path: "/payments", label: "المدفوعات", icon: CreditCard },
-	{ path: "/reports", label: "التقارير", icon: BarChart3 },
-	{ path: "/settings", label: "الإعدادات", icon: Settings },
+	{ path: "/users", label: "المستخدمون", icon: Settings },
+	{ path: "/logs", label: "السجلات", icon: Logs },
 ];
 
 export function Sidebar({
@@ -58,8 +58,12 @@ export function Sidebar({
 	const [_expandedMenus, _setExpandedMenus] = useState<string[]>([]);
 
 	const filteredNavItems = navItems.filter((item) => {
-		if (item.path === "/settings") return hasPermission("view_settings");
-		if (item.path === "/reports") return hasPermission("view_reports");
+		if (user?.role === "assistant") {
+			return item.path === "/students" || item.path === "/payments";
+		}
+
+		if (item.path === "/users") return hasPermission("view_settings");
+		if (item.path === "/logs") return hasPermission("view_settings");
 		return true;
 	});
 

@@ -11,7 +11,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run src/db/seed.ts",
-    "lint": "tsc --noEmit",
+    "lint": "bunx --bun @biomejs/biome check --write src",
     "build": "bun build src/index.ts --outdir ./dist --target node"
   },
   "dependencies": {
