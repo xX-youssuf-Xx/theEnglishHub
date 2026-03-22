@@ -202,6 +202,36 @@ export class AuthService {
 			throw error;
 		}
 	}
+
+	async resetUserPasswordByPublicId(userPublicId: string, newPassword: string) {
+		try {
+			const user = await db.query.users.findFirst({
+				where: eq(users.publicId, userPublicId),
+			});
+
+			if (!user) {
+				throw new Error("User not found");
+			}
+
+			const newPasswordHash = await hashPassword(newPassword);
+
+			await db
+				.update(users)
+				.set({ passwordHash: newPasswordHash, updatedAt: new Date() })
+				.where(eq(users.id, user.id));
+
+			return {
+				success: true,
+				user: {
+					id: user.publicId,
+					username: user.username,
+				},
+			};
+		} catch (error) {
+			logger.error("Admin reset password error:", error);
+			throw error;
+		}
+	}
 }
 
 export const authService = new AuthService();

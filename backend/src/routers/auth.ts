@@ -113,4 +113,32 @@ export const authRouter = router({
 
 			return result;
 		}),
+
+	adminResetPassword: adminProcedure
+		.input(
+			z.object({
+				userId: z.string().uuid(),
+				newPassword: z.string().min(6),
+			}),
+		)
+		.mutation(async ({ input, ctx }) => {
+			const result = await authService.resetUserPasswordByPublicId(
+				input.userId,
+				input.newPassword,
+			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "admin_reset_user_password",
+				entityType: "user",
+				newValues: {
+					targetUserId: input.userId,
+					targetUsername: result.user.username,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
+		}),
 });

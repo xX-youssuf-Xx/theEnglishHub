@@ -38,13 +38,13 @@ export function UsersPage() {
 
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+	const [selectedPasswordUserId, setSelectedPasswordUserId] = useState("");
 	const [formData, setFormData] = useState({
 		username: "",
 		password: "",
 		role: "assistant" as "admin" | "assistant",
 	});
 	const [passwordForm, setPasswordForm] = useState({
-		currentPassword: "",
 		newPassword: "",
 		confirmPassword: "",
 	});
@@ -64,12 +64,12 @@ export function UsersPage() {
 		},
 	});
 
-	const changePasswordMutation = trpc.auth.changePassword.useMutation({
+	const changePasswordMutation = trpc.auth.adminResetPassword.useMutation({
 		onSuccess: () => {
 			toast.success("تم تغيير كلمة المرور بنجاح");
 			setIsChangePasswordOpen(false);
+			setSelectedPasswordUserId("");
 			setPasswordForm({
-				currentPassword: "",
 				newPassword: "",
 				confirmPassword: "",
 			});
@@ -93,11 +93,12 @@ export function UsersPage() {
 	};
 
 	const handleChangePassword = () => {
-		if (
-			!passwordForm.currentPassword ||
-			!passwordForm.newPassword ||
-			!passwordForm.confirmPassword
-		) {
+		if (!selectedPasswordUserId) {
+			toast.error("الرجاء اختيار المستخدم");
+			return;
+		}
+
+		if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
 			toast.error("الرجاء تعبئة جميع حقول كلمة المرور");
 			return;
 		}
@@ -113,7 +114,7 @@ export function UsersPage() {
 		}
 
 		changePasswordMutation.mutate({
-			currentPassword: passwordForm.currentPassword,
+			userId: selectedPasswordUserId,
 			newPassword: passwordForm.newPassword,
 		});
 	};
@@ -282,80 +283,87 @@ export function UsersPage() {
 					open={isChangePasswordOpen}
 					onOpenChange={setIsChangePasswordOpen}
 				>
-				<DialogContent dir="rtl">
-					<DialogHeader>
-						<DialogTitle>تغيير كلمة المرور</DialogTitle>
-						<DialogDescription>
-							هذا الإجراء متاح للمدير فقط
-						</DialogDescription>
-					</DialogHeader>
+					<DialogContent dir="rtl">
+						<DialogHeader>
+							<DialogTitle>تغيير كلمة مرور مستخدم</DialogTitle>
+							<DialogDescription>
+								يمكن للمدير تغيير كلمة المرور لأي مستخدم بدون كلمة المرور
+								الحالية
+							</DialogDescription>
+						</DialogHeader>
 
-					<div className="space-y-4 py-2">
-						<div className="space-y-2">
-							<Label htmlFor="current-password">كلمة المرور الحالية</Label>
-							<Input
-								id="current-password"
-								type="password"
-								value={passwordForm.currentPassword}
-								onChange={(e) =>
-									setPasswordForm((prev) => ({
-										...prev,
-										currentPassword: e.target.value,
-									}))
-								}
-							/>
+						<div className="space-y-4 py-2">
+							<div className="space-y-2">
+								<Label>المستخدم</Label>
+								<Select
+									value={selectedPasswordUserId}
+									onValueChange={setSelectedPasswordUserId}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="اختر المستخدم" />
+									</SelectTrigger>
+									<SelectContent>
+										{(data?.data || []).map((u) => (
+											<SelectItem key={u.id} value={u.id}>
+												{u.username} ({u.role === "admin" ? "مدير" : "مساعد"})
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+								<Input
+									id="new-password"
+									type="password"
+									value={passwordForm.newPassword}
+									onChange={(e) =>
+										setPasswordForm((prev) => ({
+											...prev,
+											newPassword: e.target.value,
+										}))
+									}
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="confirm-password">
+									تأكيد كلمة المرور الجديدة
+								</Label>
+								<Input
+									id="confirm-password"
+									type="password"
+									value={passwordForm.confirmPassword}
+									onChange={(e) =>
+										setPasswordForm((prev) => ({
+											...prev,
+											confirmPassword: e.target.value,
+										}))
+									}
+								/>
+							</div>
 						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="new-password">كلمة المرور الجديدة</Label>
-							<Input
-								id="new-password"
-								type="password"
-								value={passwordForm.newPassword}
-								onChange={(e) =>
-									setPasswordForm((prev) => ({
-										...prev,
-										newPassword: e.target.value,
-									}))
-								}
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="confirm-password">تأكيد كلمة المرور الجديدة</Label>
-							<Input
-								id="confirm-password"
-								type="password"
-								value={passwordForm.confirmPassword}
-								onChange={(e) =>
-									setPasswordForm((prev) => ({
-										...prev,
-										confirmPassword: e.target.value,
-									}))
-								}
-							/>
-						</div>
-					</div>
-
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsChangePasswordOpen(false)}
-						>
-							إلغاء
-						</Button>
-						<Button
-							onClick={handleChangePassword}
-							disabled={changePasswordMutation.isPending}
-						>
-							{changePasswordMutation.isPending ? (
-								<Loader2 className="w-4 h-4 animate-spin" />
-							) : (
-								"حفظ"
-							)}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
+						<DialogFooter>
+							<Button
+								variant="outline"
+								onClick={() => setIsChangePasswordOpen(false)}
+							>
+								إلغاء
+							</Button>
+							<Button
+								onClick={handleChangePassword}
+								disabled={changePasswordMutation.isPending}
+							>
+								{changePasswordMutation.isPending ? (
+									<Loader2 className="w-4 h-4 animate-spin" />
+								) : (
+									"حفظ"
+								)}
+							</Button>
+						</DialogFooter>
+					</DialogContent>
 				</Dialog>
 			)}
 		</div>
