@@ -126,7 +126,26 @@ export function AddClassModal({
 	) => {
 		setFormData((prev) => {
 			const newSchedules = [...prev.schedules];
-			newSchedules[index] = { ...newSchedules[index], [field]: value };
+
+			if (field === "startTime") {
+				newSchedules[index] = {
+					...newSchedules[index],
+					startTime: value,
+					endTime:
+						newSchedules[index].endTime &&
+						newSchedules[index].endTime <= value
+							? ""
+							: newSchedules[index].endTime,
+				};
+			} else if (field === "endTime") {
+				newSchedules[index] = {
+					...newSchedules[index],
+					endTime: value,
+				};
+			} else {
+				newSchedules[index] = { ...newSchedules[index], [field]: value };
+			}
+
 			return { ...prev, schedules: newSchedules };
 		});
 	};
@@ -159,6 +178,14 @@ export function AddClassModal({
 				return;
 			}
 
+			const hasInvalidRange = validSchedules.some(
+				(s) => s.endTime <= s.startTime,
+			);
+			if (hasInvalidRange) {
+				toast.error("وقت النهاية يجب أن يكون بعد وقت البداية");
+				return;
+			}
+
 			createCourseClassMutation.mutate({
 				courseId,
 				name: formData.name,
@@ -178,6 +205,15 @@ export function AddClassModal({
 			});
 		} else {
 			// Creating generic class (no course context)
+			if (
+				formData.schedules[0]?.startTime &&
+				formData.schedules[0]?.endTime &&
+				formData.schedules[0].endTime <= formData.schedules[0].startTime
+			) {
+				toast.error("وقت النهاية يجب أن يكون بعد وقت البداية");
+				return;
+			}
+
 			createClassMutation.mutate({
 				name: formData.name,
 				teacherId: formData.teacherId || undefined,
@@ -359,30 +395,33 @@ export function AddClassModal({
 									</Select>
 
 									<div className="relative">
-										<Input
-											type="time"
-											step={900}
-											value={schedule.startTime}
-											onChange={(e) =>
-												handleScheduleChange(index, "startTime", e.target.value)
-											}
-											className="w-[140px] text-base cursor-pointer"
-										/>
-									</div>
+									<Input
+										type="time"
+										step={900}
+										value={schedule.startTime}
+										onChange={(e) =>
+											handleScheduleChange(index, "startTime", e.target.value)
+										}
+										lang="en-GB"
+										className="w-[140px] text-base cursor-pointer"
+									/>
+								</div>
 
 									<span className="text-text-muted px-1">إلى</span>
 
 									<div className="relative">
-										<Input
-											type="time"
-											step={900}
-											value={schedule.endTime}
-											onChange={(e) =>
-												handleScheduleChange(index, "endTime", e.target.value)
-											}
-											className="w-[140px] text-base cursor-pointer"
-										/>
-									</div>
+									<Input
+										type="time"
+										step={900}
+										value={schedule.endTime}
+										onChange={(e) =>
+											handleScheduleChange(index, "endTime", e.target.value)
+										}
+										min={schedule.startTime || undefined}
+										lang="en-GB"
+										className="w-[140px] text-base cursor-pointer"
+									/>
+								</div>
 
 									{formData.schedules.length > 1 && (
 										<Button

@@ -7,7 +7,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useState } from "react";
 
@@ -20,6 +26,19 @@ export function DashboardPage() {
 	const currentMonth = useMemo(() => {
 		const now = new Date();
 		return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+	}, []);
+
+	const monthOptions = useMemo(() => {
+		const now = new Date();
+		return Array.from({ length: 24 }).map((_, index) => {
+			const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+			const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+			const label = date.toLocaleDateString("en-GB", {
+				year: "numeric",
+				month: "long",
+			});
+			return { value, label };
+		});
 	}, []);
 
 	const { data: stats, isLoading: isLoadingStats, error } =
@@ -97,13 +116,19 @@ export function DashboardPage() {
 								</CardDescription>
 							</div>
 							<div className="relative">
-								<CalendarDays className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" />
-								<Input
-									type="month"
-									value={selectedMonth}
-									onChange={(e) => setSelectedMonth(e.target.value)}
-									className="pr-10 w-[180px]"
-								/>
+								<CalendarDays className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted z-10" />
+								<Select value={selectedMonth} onValueChange={setSelectedMonth}>
+									<SelectTrigger className="pr-10 w-[220px]">
+										<SelectValue placeholder="اختر الشهر" />
+									</SelectTrigger>
+									<SelectContent>
+										{monthOptions.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</div>
 						</div>
 					</CardHeader>
