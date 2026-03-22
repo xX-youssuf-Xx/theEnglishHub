@@ -62,9 +62,6 @@ function StatCard({
 	);
 }
 
-// Colors for pie chart
-const COLORS = ["#34D399", "#FBBF24", "#F87171"];
-
 export function DashboardPage() {
 	const navigate = useNavigate();
 	const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -116,23 +113,6 @@ export function DashboardPage() {
 			</div>
 		);
 	}
-
-	// Prepare payment status data for chart
-	const paymentStatusData = paymentReport?.summary
-		? [
-				{ name: "مدفوع", value: paymentReport.summary.paid, color: COLORS[0] },
-				{
-					name: "معلق",
-					value: paymentReport.summary.pending,
-					color: COLORS[1],
-				},
-				{
-					name: "متأخر",
-					value: paymentReport.summary.overdue,
-					color: COLORS[2],
-				},
-			].filter((item) => item.value > 0)
-		: [];
 
 	return (
 		<div className="space-y-6">
