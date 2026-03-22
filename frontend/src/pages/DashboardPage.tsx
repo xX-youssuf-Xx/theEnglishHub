@@ -1,12 +1,11 @@
 import {
 	AlertCircle,
 	BarChart3,
+	CalendarDays,
 	CreditCard,
 	DollarSign,
 	GraduationCap,
 	Loader2,
-	TrendingDown,
-	TrendingUp,
 	Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -20,24 +19,20 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { Input } from "@/components/ui/input";
+import { useMemo, useState } from "react";
 
 interface StatCardProps {
 	title: string;
 	value: string | number;
-	trend?: number;
-	isPositive?: boolean;
 	icon: React.ReactNode;
-	trendLabel?: string;
 	isLoading?: boolean;
 }
 
 function StatCard({
 	title,
 	value,
-	trend,
-	isPositive,
 	icon,
-	trendLabel,
 	isLoading,
 }: StatCardProps) {
 	if (isLoading) {
@@ -59,20 +54,6 @@ function StatCard({
 					<div className="space-y-2">
 						<p className="text-sm font-medium text-text-muted">{title}</p>
 						<p className="text-3xl font-bold text-text-heading">{value}</p>
-						{trend !== undefined && (
-							<div
-								className={`flex items-center gap-1 text-sm ${isPositive ? "text-success" : "text-error"}`}
-							>
-								{isPositive ? (
-									<TrendingUp className="w-4 h-4" />
-								) : (
-									<TrendingDown className="w-4 h-4" />
-								)}
-								<span>
-									{trend}% {trendLabel || "من الشهر الماضي"}
-								</span>
-							</div>
-						)}
 					</div>
 					<div className="p-3 bg-primary/10 rounded-lg">{icon}</div>
 				</div>
@@ -86,14 +67,43 @@ const COLORS = ["#34D399", "#FBBF24", "#F87171"];
 
 export function DashboardPage() {
 	const navigate = useNavigate();
+	const [selectedMonth, setSelectedMonth] = useState(() => {
+		const now = new Date();
+		return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+	});
 
 	const {
 		data: stats,
 		isLoading: isLoadingStats,
 		error,
-	} = trpc.reports.getDashboardStats.useQuery();
-	const { data: paymentReport, isLoading: isLoadingPayments } =
-		trpc.reports.getStudentPaymentReport.useQuery();
+	} = trpc.reports.getDashboardStats.useQuery({
+		month: selectedMonth,
+	});
+	const { data: monthlyFinancialSummary, isLoading: isLoadingFinancialSummary } =
+		trpc.reports.getMonthlyFinancialSummary.useQuery({
+			month: selectedMonth,
+		});
+
+	const financialBreakdown = useMemo(
+		() => [
+			{
+				name: "دخل الطلاب",
+				value: monthlyFinancialSummary?.studentIncome || 0,
+				color: "#34D399",
+			},
+			{
+				name: "رواتب المعلمين",
+				value: monthlyFinancialSummary?.teacherPaymentsCost || 0,
+				color: "#60A5FA",
+			},
+			{
+				name: "مصروفات تشغيلية",
+				value: monthlyFinancialSummary?.operationalExpenses || 0,
+				color: "#F87171",
+			},
+		],
+		[monthlyFinancialSummary],
+	);
 
 	if (error) {
 		return (
@@ -132,7 +142,16 @@ export function DashboardPage() {
 					<h1 className="text-3xl font-bold text-text-heading">لوحة التحكم</h1>
 					<p className="text-text-muted mt-1">نظرة عامة على أداء المركز</p>
 				</div>
-				<div className="flex gap-2">
+				<div className="flex gap-2 items-center">
+					<div className="relative">
+						<CalendarDays className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" />
+						<Input
+							type="month"
+							value={selectedMonth}
+							onChange={(e) => setSelectedMonth(e.target.value)}
+							className="pr-10 w-[180px]"
+						/>
+					</div>
 					<Button className="gap-2" onClick={() => navigate("/payments")}>
 						<CreditCard className="w-4 h-4" />
 						تسجيل دفعة
@@ -162,14 +181,14 @@ export function DashboardPage() {
 				/>
 				<StatCard
 					title="ملخص مالي"
-					value={`${(stats?.monthlyIncome ?? 0).toLocaleString()} ج.م`}
-					isLoading={isLoadingStats}
+					value={`${(monthlyFinancialSummary?.netProfit ?? 0).toLocaleString()} ج.م`}
+					isLoading={isLoadingFinancialSummary}
 					icon={<CreditCard className="w-6 h-6 text-accent-coral" />}
 				/>
 				<StatCard
 					title="الربح الشهري"
-					value={`${(stats?.monthlyIncome ?? 0).toLocaleString()} ج.م`}
-					isLoading={isLoadingStats}
+					value={`${(monthlyFinancialSummary?.netProfit ?? 0).toLocaleString()} ج.م`}
+					isLoading={isLoadingFinancialSummary}
 					icon={<DollarSign className="w-6 h-6 text-success" />}
 				/>
 			</div>
@@ -183,17 +202,17 @@ export function DashboardPage() {
 						<CardDescription>توزيع حالات المدفوعات بين الطلاب</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{isLoadingPayments ? (
+						{isLoadingFinancialSummary ? (
 							<div className="flex items-center justify-center h-64">
 								<Loader2 className="w-8 h-8 animate-spin text-primary" />
 							</div>
-						) : paymentStatusData.length > 0 ? (
+						) : financialBreakdown.some((item) => item.value > 0) ? (
 							<>
 								<div className="h-64">
 									<ResponsiveContainer width="100%" height="100%">
 										<PieChart>
 											<Pie
-												data={paymentStatusData}
+												data={financialBreakdown.filter((item) => item.value > 0)}
 												cx="50%"
 												cy="50%"
 												innerRadius={60}
@@ -201,8 +220,10 @@ export function DashboardPage() {
 												paddingAngle={5}
 												dataKey="value"
 											>
-												{paymentStatusData.map((entry, index) => (
-													<Cell key={`cell-${index}`} fill={entry.color} />
+												{financialBreakdown
+													.filter((item) => item.value > 0)
+													.map((entry) => (
+														<Cell key={entry.name} fill={entry.color} />
 												))}
 											</Pie>
 											<Tooltip
@@ -216,7 +237,9 @@ export function DashboardPage() {
 									</ResponsiveContainer>
 								</div>
 								<div className="flex justify-center gap-6 mt-4">
-									{paymentStatusData.map((item) => (
+									{financialBreakdown
+										.filter((item) => item.value > 0)
+										.map((item) => (
 										<div key={item.name} className="flex items-center gap-2">
 											<div
 												className="w-3 h-3 rounded-full"
@@ -286,12 +309,12 @@ export function DashboardPage() {
 									<div>
 										<p className="font-medium">إجمالي الدخل الشهري</p>
 										<p className="text-sm text-text-muted">
-											الدخل المحقق هذا الشهر
+											صافي الربح للشهر المحدد
 										</p>
 									</div>
 								</div>
 								<span className="text-2xl font-bold">
-									{(stats?.monthlyIncome ?? 0).toLocaleString()} ج.م
+									{(monthlyFinancialSummary?.netProfit ?? 0).toLocaleString()} ج.م
 								</span>
 							</div>
 

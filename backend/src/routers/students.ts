@@ -2,6 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db";
 import { classes, courseLevels, courses } from "../db/schema";
+import { auditService } from "../services/audit";
 import { studentService } from "../services/students";
 import { adminProcedure, protectedProcedure, router } from "../trpc/context";
 
@@ -48,7 +49,7 @@ export const studentRouter = router({
 					.optional(),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// Resolve class UUID to ID if provided
 			let classIdNumber: number | undefined;
 			if (input.classId) {
@@ -87,7 +88,7 @@ export const studentRouter = router({
 					.filter((e) => e.courseId > 0 && e.levelId > 0);
 			}
 
-			return studentService.create({
+			const result = await studentService.create({
 				fullName: input.fullName,
 				age: input.age,
 				parentName: input.parentName,
@@ -97,6 +98,21 @@ export const studentRouter = router({
 				classId: classIdNumber,
 				enrollments: enrollmentsData,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "create_student",
+				entityType: "student",
+				newValues: {
+					fullName: input.fullName,
+					classId: input.classId,
+					enrollmentsCount: enrollmentsData?.length || 0,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	update: protectedProcedure
@@ -114,7 +130,7 @@ export const studentRouter = router({
 				}),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// Resolve class UUID to ID if provided
 			let classIdNumber: number | undefined;
 			if (input.data.classId) {
@@ -126,16 +142,43 @@ export const studentRouter = router({
 				}
 			}
 
-			return studentService.update(input.id, {
+			const result = await studentService.update(input.id, {
 				...input.data,
 				classId: classIdNumber,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "update_student",
+				entityType: "student",
+				newValues: {
+					studentId: input.id,
+					changedFields: Object.keys(input.data),
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	delete: adminProcedure
 		.input(z.string().uuid())
-		.mutation(async ({ input }) => {
-			return studentService.delete(input);
+		.mutation(async ({ input, ctx }) => {
+			const result = await studentService.delete(input);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "delete_student",
+				entityType: "student",
+				newValues: {
+					studentId: input,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	enrollInCourse: protectedProcedure
@@ -147,7 +190,7 @@ export const studentRouter = router({
 				classId: z.string().uuid(),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// Resolve UUIDs to IDs
 			const course = await db.query.courses.findFirst({
 				where: eq(courses.publicId, input.courseId),
@@ -172,11 +215,27 @@ export const studentRouter = router({
 				);
 			}
 
-			return studentService.enrollInCourse(input.studentId, {
+			const result = await studentService.enrollInCourse(input.studentId, {
 				courseId: course.id,
 				levelId: level.id,
 				classId: classData.id,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "enroll_student_in_course",
+				entityType: "student_enrollment",
+				newValues: {
+					studentId: input.studentId,
+					courseId: input.courseId,
+					levelId: input.levelId,
+					classId: input.classId,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	changeClass: protectedProcedure
@@ -188,7 +247,7 @@ export const studentRouter = router({
 				notes: z.string().optional(),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// Resolve class UUID to ID
 			const classData = await db.query.classes.findFirst({
 				where: eq(classes.publicId, input.newClassId),
@@ -198,12 +257,27 @@ export const studentRouter = router({
 				throw new Error("Class not found");
 			}
 
-			return studentService.changeClass(
+			const result = await studentService.changeClass(
 				input.studentId,
 				input.enrollmentId,
 				classData.id,
 				input.notes,
 			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "change_student_class",
+				entityType: "student_enrollment",
+				newValues: {
+					studentId: input.studentId,
+					enrollmentId: input.enrollmentId,
+					newClassId: input.newClassId,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	advanceLevel: protectedProcedure
@@ -216,7 +290,7 @@ export const studentRouter = router({
 				notes: z.string().optional(),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// Resolve level UUID to ID
 			const level = await db.query.courseLevels.findFirst({
 				where: eq(courseLevels.publicId, input.newLevelId),
@@ -237,13 +311,29 @@ export const studentRouter = router({
 				}
 			}
 
-			return studentService.advanceLevel(
+			const result = await studentService.advanceLevel(
 				input.studentId,
 				input.enrollmentId,
 				level.id,
 				classIdNumber,
 				input.notes,
 			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "advance_student_level",
+				entityType: "student_enrollment",
+				newValues: {
+					studentId: input.studentId,
+					enrollmentId: input.enrollmentId,
+					newLevelId: input.newLevelId,
+					newClassId: input.newClassId,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	completeCourse: protectedProcedure
@@ -255,8 +345,8 @@ export const studentRouter = router({
 				notes: z.string().optional(),
 			}),
 		)
-		.mutation(async ({ input }) => {
-			return studentService.completeCourse(
+		.mutation(async ({ input, ctx }) => {
+			const result = await studentService.completeCourse(
 				input.studentId,
 				input.enrollmentId,
 				{
@@ -264,6 +354,21 @@ export const studentRouter = router({
 					notes: input.notes,
 				},
 			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "complete_student_course",
+				entityType: "student_enrollment",
+				newValues: {
+					studentId: input.studentId,
+					enrollmentId: input.enrollmentId,
+					finalGrade: input.finalGrade,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	dropCourse: protectedProcedure
@@ -274,12 +379,27 @@ export const studentRouter = router({
 				reason: z.string().optional(),
 			}),
 		)
-		.mutation(async ({ input }) => {
-			return studentService.dropCourse(
+		.mutation(async ({ input, ctx }) => {
+			const result = await studentService.dropCourse(
 				input.studentId,
 				input.enrollmentId,
 				input.reason,
 			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "drop_student_course",
+				entityType: "student_enrollment",
+				newValues: {
+					studentId: input.studentId,
+					enrollmentId: input.enrollmentId,
+					reason: input.reason,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	getCourseHistory: protectedProcedure

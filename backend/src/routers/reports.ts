@@ -91,7 +91,28 @@ export const reportRouter = router({
 			});
 		}),
 
-	getDashboardStats: protectedProcedure.query(async () => {
-		return reportService.getDashboardStats();
-	}),
+	getDashboardStats: protectedProcedure
+		.input(
+			z
+				.object({
+					month: z
+						.string()
+						.regex(/^\d{4}-\d{2}$/)
+						.optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ input }) => {
+			return reportService.getDashboardStats(input?.month);
+		}),
+
+	getMonthlyFinancialSummary: protectedProcedure
+		.input(
+			z.object({
+				month: z.string().regex(/^\d{4}-\d{2}$/),
+			}),
+		)
+		.query(async ({ input }) => {
+			return reportService.getMonthlyFinancialSummary(input.month);
+		}),
 });

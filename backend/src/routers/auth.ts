@@ -16,8 +16,36 @@ export const authRouter = router({
 				password: z.string(),
 			}),
 		)
-		.mutation(async ({ input }) => {
-			return authService.login(input.username, input.password);
+		.mutation(async ({ input, ctx }) => {
+			try {
+				const result = await authService.login(input.username, input.password);
+
+				await auditService.logAction({
+					userId: null,
+					action: "login_success",
+					entityType: "auth_session",
+					newValues: {
+						username: input.username,
+						role: result.user.role,
+					},
+					ipAddress: ctx.ipAddress,
+					userAgent: ctx.userAgent,
+				});
+
+				return result;
+			} catch (error) {
+				await auditService.logAction({
+					userId: null,
+					action: "login_failed",
+					entityType: "auth_session",
+					newValues: {
+						username: input.username,
+					},
+					ipAddress: ctx.ipAddress,
+					userAgent: ctx.userAgent,
+				});
+				throw error;
+			}
 		}),
 
 	me: protectedProcedure.query(async ({ ctx }) => {
@@ -40,11 +68,24 @@ export const authRouter = router({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			return authService.changePassword(
+			const result = await authService.changePassword(
 				ctx.user.id,
 				input.currentPassword,
 				input.newPassword,
 			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "change_password",
+				entityType: "user",
+				newValues: {
+					userId: ctx.user.publicId,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	createUser: adminProcedure

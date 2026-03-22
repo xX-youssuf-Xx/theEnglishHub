@@ -53,12 +53,27 @@ export const sessionRouter = router({
 				attended: z.boolean(),
 			}),
 		)
-		.mutation(async ({ input }) => {
-			return sessionService.markStudentAttendance(
+		.mutation(async ({ input, ctx }) => {
+			const result = await sessionService.markStudentAttendance(
 				input.sessionId,
 				input.studentId,
 				input.attended,
 			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "mark_session_attendance",
+				entityType: "session_attendance",
+				newValues: {
+					sessionId: input.sessionId,
+					studentId: input.studentId,
+					attended: input.attended,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	createForClass: protectedProcedure
@@ -91,12 +106,41 @@ export const sessionRouter = router({
 			);
 		}),
 
-	generateSessionsForAllClasses: publicProcedure.mutation(async () => {
-		return sessionService.generateSessionsForAllClasses();
+	generateSessionsForAllClasses: publicProcedure.mutation(async ({ ctx }) => {
+		const result = await sessionService.generateSessionsForAllClasses();
+
+		await auditService.logAction({
+			userId: ctx.user?.id || null,
+			action: "generate_sessions_for_month",
+			entityType: "session",
+			newValues: {
+				totalSessionsCreated: result.totalSessionsCreated,
+				classesProcessed: result.classesProcessed,
+				month: result.month,
+			},
+			ipAddress: ctx.ipAddress,
+			userAgent: ctx.userAgent,
+		});
+
+		return result;
 	}),
 
-	generateMissingPendingPayments: publicProcedure.mutation(async () => {
-		return sessionService.generateMissingPendingPayments();
+	generateMissingPendingPayments: publicProcedure.mutation(async ({ ctx }) => {
+		const result = await sessionService.generateMissingPendingPayments();
+
+		await auditService.logAction({
+			userId: ctx.user?.id || null,
+			action: "generate_missing_pending_payments",
+			entityType: "payment",
+			newValues: {
+				studentPaymentsCreated: result.studentPaymentsCreated,
+				teacherPaymentsCreated: result.teacherPaymentsCreated,
+			},
+			ipAddress: ctx.ipAddress,
+			userAgent: ctx.userAgent,
+		});
+
+		return result;
 	}),
 
 	getSessionDetails: protectedProcedure

@@ -97,7 +97,7 @@ export const paymentRouter = router({
 				throw new Error("Course not found");
 			}
 
-			return paymentService.recordStudentPayment({
+			const result = await paymentService.recordStudentPayment({
 				studentId: student.id,
 				classId: classData.id,
 				courseId: course.id,
@@ -108,6 +108,24 @@ export const paymentRouter = router({
 				notes: input.notes,
 				recordedBy: ctx.user?.id,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user?.id,
+				action: "record_student_payment",
+				entityType: "student_payment",
+				newValues: {
+					studentId: input.studentId,
+					classId: input.classId,
+					courseId: input.courseId,
+					type: input.type,
+					amount: input.amount,
+					sessionsCovered: input.sessionsCovered,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	getPendingStudentPayments: protectedProcedure.query(async () => {
@@ -182,7 +200,7 @@ export const paymentRouter = router({
 				throw new Error("Teacher or class not found");
 			}
 
-			return paymentService.recordTeacherPayment({
+			const result = await paymentService.recordTeacherPayment({
 				teacherId: teacher.id,
 				classId: classData.id,
 				amount: input.amount,
@@ -191,6 +209,22 @@ export const paymentRouter = router({
 				notes: input.notes,
 				recordedBy: ctx.user?.id,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user?.id,
+				action: "record_teacher_payment",
+				entityType: "teacher_payment",
+				newValues: {
+					teacherId: input.teacherId,
+					classId: input.classId,
+					amount: input.amount,
+					sessionsCovered: input.sessionsCovered,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	// Expenses
@@ -220,16 +254,44 @@ export const paymentRouter = router({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			return paymentService.recordExpense({
+			const result = await paymentService.recordExpense({
 				...input,
 				recordedBy: ctx.user?.id,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user?.id,
+				action: "record_expense",
+				entityType: "expense",
+				newValues: {
+					category: input.category,
+					amount: input.amount,
+					expenseDate: input.expenseDate,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	deleteExpense: adminProcedure
 		.input(z.string().uuid())
-		.mutation(async ({ input }) => {
-			return paymentService.deleteExpense(input);
+		.mutation(async ({ input, ctx }) => {
+			const result = await paymentService.deleteExpense(input);
+
+			await auditService.logAction({
+				userId: ctx.user?.id,
+				action: "delete_expense",
+				entityType: "expense",
+				newValues: {
+					expenseId: input,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	// Unified payment history

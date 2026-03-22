@@ -2,6 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db";
 import { classes } from "../db/schema";
+import { auditService } from "../services/audit";
 import { teacherService } from "../services/teachers";
 import { adminProcedure, protectedProcedure, router } from "../trpc/context";
 
@@ -44,7 +45,7 @@ export const teacherRouter = router({
 					.optional(),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// Resolve class UUIDs to IDs
 			let classAssignmentsData:
 				| { classId: number; paymentAmount: number; paymentCycle: "4" | "8" }[]
@@ -68,13 +69,28 @@ export const teacherRouter = router({
 					.filter((ca) => ca.classId > 0);
 			}
 
-			return teacherService.create({
+			const result = await teacherService.create({
 				fullName: input.fullName,
 				phone: input.phone,
 				email: input.email,
 				address: input.address,
 				classAssignments: classAssignmentsData,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "create_teacher",
+				entityType: "teacher",
+				newValues: {
+					teacherId: result.id,
+					fullName: result.fullName,
+					classAssignmentsCount: classAssignmentsData?.length || 0,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	update: protectedProcedure
@@ -89,14 +105,41 @@ export const teacherRouter = router({
 				}),
 			}),
 		)
-		.mutation(async ({ input }) => {
-			return teacherService.update(input.id, input.data);
+		.mutation(async ({ input, ctx }) => {
+			const result = await teacherService.update(input.id, input.data);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "update_teacher",
+				entityType: "teacher",
+				newValues: {
+					teacherId: input.id,
+					changedFields: Object.keys(input.data),
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	delete: adminProcedure
 		.input(z.string().uuid())
-		.mutation(async ({ input }) => {
-			return teacherService.delete(input);
+		.mutation(async ({ input, ctx }) => {
+			const result = await teacherService.delete(input);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "delete_teacher",
+				entityType: "teacher",
+				newValues: {
+					teacherId: input,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	assignToClass: protectedProcedure
@@ -108,7 +151,7 @@ export const teacherRouter = router({
 				paymentCycle: z.enum(["4", "8"]),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// Resolve class UUID to ID
 			const classData = await db.query.classes.findFirst({
 				where: eq(classes.publicId, input.classId),
@@ -118,11 +161,27 @@ export const teacherRouter = router({
 				throw new Error("Class not found");
 			}
 
-			return teacherService.assignToClass(input.teacherId, {
+			const result = await teacherService.assignToClass(input.teacherId, {
 				classId: classData.id,
 				paymentAmount: input.paymentAmount,
 				paymentCycle: input.paymentCycle,
 			});
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "assign_teacher_to_class",
+				entityType: "class_teacher_assignment",
+				newValues: {
+					teacherId: input.teacherId,
+					classId: input.classId,
+					paymentAmount: input.paymentAmount,
+					paymentCycle: input.paymentCycle,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	getClassesByCourse: protectedProcedure
@@ -138,8 +197,25 @@ export const teacherRouter = router({
 				classId: z.string().uuid(),
 			}),
 		)
-		.mutation(async ({ input }) => {
-			return teacherService.removeFromClass(input.teacherId, input.classId);
+		.mutation(async ({ input, ctx }) => {
+			const result = await teacherService.removeFromClass(
+				input.teacherId,
+				input.classId,
+			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "remove_teacher_from_class",
+				entityType: "class_teacher_assignment",
+				newValues: {
+					teacherId: input.teacherId,
+					classId: input.classId,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	updateClassAssignment: protectedProcedure
@@ -151,7 +227,7 @@ export const teacherRouter = router({
 				paymentCycle: z.enum(["4", "8"]).optional(),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			if (
 				input.paymentAmount === undefined &&
 				input.paymentCycle === undefined
@@ -159,7 +235,7 @@ export const teacherRouter = router({
 				throw new Error("No changes provided");
 			}
 
-			return teacherService.updateClassAssignment(
+			const result = await teacherService.updateClassAssignment(
 				input.teacherId,
 				input.classId,
 				{
@@ -167,6 +243,22 @@ export const teacherRouter = router({
 					paymentCycle: input.paymentCycle,
 				},
 			);
+
+			await auditService.logAction({
+				userId: ctx.user.id,
+				action: "update_teacher_class_assignment",
+				entityType: "class_teacher_assignment",
+				newValues: {
+					teacherId: input.teacherId,
+					classId: input.classId,
+					paymentAmount: input.paymentAmount,
+					paymentCycle: input.paymentCycle,
+				},
+				ipAddress: ctx.ipAddress,
+				userAgent: ctx.userAgent,
+			});
+
+			return result;
 		}),
 
 	getAvailableClasses: protectedProcedure.query(async () => {

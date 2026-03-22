@@ -317,7 +317,7 @@ export function EnrollmentHistoryModal({
 						)}
 
 						<div className="space-y-6">
-							{history.map((enrollment, _index) => (
+							{history.map((enrollment) => (
 								<div
 									key={enrollment.id}
 									className="border rounded-lg p-4 space-y-4"
@@ -390,45 +390,35 @@ export function EnrollmentHistoryModal({
 															</span>
 														</div>
 
-														<div
-															className="flex items-center gap-2 text-sm justify-end"
-															dir="rtl"
-														>
-															{change.previousClass ? (
-																<>
-																	<div className="flex items-center gap-1 font-medium">
-																		<span>{change.newClass.name}</span>
-																	</div>
-																	<MoveLeft className="w-4 h-4 text-primary" />
-																	<div className="flex items-center gap-1 text-text-muted">
-																		<span>{change.previousClass.name}</span>
-																	</div>
-																</>
-															) : (
+													<div className="flex items-center gap-2 text-sm justify-end" dir="rtl">
+														{change.previousClass ? (
+															<>
+																<div className="flex items-center gap-1 text-text-muted">
+																	<span>{change.previousClass.name}</span>
+																</div>
+																<MoveLeft className="w-4 h-4 text-primary" />
 																<div className="flex items-center gap-1 font-medium">
 																	<span>{change.newClass.name}</span>
 																</div>
-															)}
-														</div>
-
-														{change.previousLevel && (
-															<div
-																className="flex items-center gap-2 text-sm justify-end"
-																dir="rtl"
-															>
-																<div className="flex items-center gap-1 font-medium">
-																	<span>
-																		مستوى {change.newLevel.levelNumber}
-																	</span>
-																</div>
-																<MoveLeft className="w-4 h-4 text-primary" />
-																<div className="flex items-center gap-1 text-text-muted">
-																	<span>
-																		مستوى {change.previousLevel.levelNumber}
-																	</span>
-																</div>
+															</>
+														) : (
+															<div className="flex items-center gap-1 font-medium">
+																<span>{change.newClass.name}</span>
 															</div>
 														)}
+													</div>
+
+														{change.previousLevel && (
+														<div className="flex items-center gap-2 text-sm justify-end" dir="rtl">
+															<div className="flex items-center gap-1 text-text-muted">
+																<span>مستوى {change.previousLevel.levelNumber}</span>
+															</div>
+															<MoveLeft className="w-4 h-4 text-primary" />
+															<div className="flex items-center gap-1 font-medium">
+																<span>مستوى {change.newLevel.levelNumber}</span>
+															</div>
+														</div>
+													)}
 													</div>
 												))}
 											</div>

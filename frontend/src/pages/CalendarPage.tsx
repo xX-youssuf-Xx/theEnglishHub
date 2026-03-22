@@ -19,9 +19,7 @@ import {
 	Loader2,
 	MoreVertical,
 	RefreshCw,
-	UserCheck,
 	Users,
-	UserX,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -463,7 +461,7 @@ export function CalendarPage() {
 							<CalendarIcon className="w-5 h-5" />
 							تفاصيل الحصة
 						</DialogTitle>
-						<DialogDescription>معلومات الحصة والحضور</DialogDescription>
+						<DialogDescription>معلومات الحصة</DialogDescription>
 					</DialogHeader>
 
 					{isLoadingDetails ? (
@@ -525,73 +523,6 @@ export function CalendarPage() {
 									</CardContent>
 								</Card>
 							</div>
-
-							{/* Attendance Stats */}
-							<Card>
-								<CardHeader className="pb-2">
-									<CardTitle className="text-sm flex items-center gap-2">
-										<Users className="w-4 h-4" />
-										إحصائيات الحضور
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<div className="grid grid-cols-3 gap-4">
-										<div className="text-center p-3 bg-blue-50 rounded-lg">
-											<div className="text-2xl font-bold text-blue-600">
-												{sessionDetails.attendanceStats?.total || 0}
-											</div>
-											<div className="text-sm text-gray-600">إجمالي الطلاب</div>
-										</div>
-										<div className="text-center p-3 bg-green-50 rounded-lg">
-											<div className="text-2xl font-bold text-green-600">
-												{sessionDetails.attendanceStats?.attended || 0}
-											</div>
-											<div className="text-sm text-gray-600">حاضر</div>
-										</div>
-										<div className="text-center p-3 bg-red-50 rounded-lg">
-											<div className="text-2xl font-bold text-red-600">
-												{sessionDetails.attendanceStats?.absent || 0}
-											</div>
-											<div className="text-sm text-gray-600">غائب</div>
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-
-							{/* Attendance List */}
-							{sessionDetails.attendance &&
-								sessionDetails.attendance.length > 0 && (
-									<Card>
-										<CardHeader className="pb-2">
-											<CardTitle className="text-sm">قائمة الحضور</CardTitle>
-										</CardHeader>
-										<CardContent>
-											<div className="h-[200px] overflow-y-auto">
-												<div className="space-y-2">
-													{sessionDetails.attendance.map((attendance: any) => (
-														<div
-															key={attendance.studentId}
-															className="flex items-center justify-between p-2 bg-gray-50 rounded"
-														>
-															<span>{attendance.studentName}</span>
-															{attendance.attended ? (
-																<Badge variant="success" className="gap-1">
-																	<UserCheck className="w-3 h-3" />
-																	حاضر
-																</Badge>
-															) : (
-																<Badge variant="secondary" className="gap-1">
-																	<UserX className="w-3 h-3" />
-																	غائب
-																</Badge>
-															)}
-														</div>
-													))}
-												</div>
-											</div>
-										</CardContent>
-									</Card>
-								)}
 
 							{/* Actions */}
 							{sessionDetails.status === "scheduled" && (

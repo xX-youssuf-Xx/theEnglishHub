@@ -15,6 +15,98 @@ import {
 import { logger } from "../utils/logger";
 
 export class ReportService {
+	private parseMonth(month: string) {
+		const [yearStr, monthStr] = month.split("-");
+		const year = Number(yearStr);
+		const monthIndex = Number(monthStr) - 1;
+
+		if (
+			!Number.isFinite(year) ||
+			!Number.isFinite(monthIndex) ||
+			monthIndex < 0 ||
+			monthIndex > 11
+		) {
+			throw new Error("Invalid month format. Expected YYYY-MM");
+		}
+
+		const firstDay = new Date(year, monthIndex, 1);
+		const lastDay = new Date(year, monthIndex + 1, 0);
+
+		return {
+			year,
+			month: monthIndex + 1,
+			firstDay,
+			lastDay,
+			firstDayStr: firstDay.toISOString().split("T")[0],
+			lastDayStr: lastDay.toISOString().split("T")[0],
+		};
+	}
+
+	async getMonthlyFinancialSummary(month: string) {
+		try {
+			const parsed = this.parseMonth(month);
+
+			const [studentIncomeResult, teacherPaymentsResult, expensesResult] =
+				await Promise.all([
+					db
+						.select({ total: sum(studentPayments.amount) })
+						.from(studentPayments)
+						.where(
+							and(
+								eq(studentPayments.status, "paid"),
+								gte(studentPayments.paymentDate, parsed.firstDayStr),
+								lte(studentPayments.paymentDate, parsed.lastDayStr),
+							),
+						),
+					db
+						.select({ total: sum(teacherPayments.amount) })
+						.from(teacherPayments)
+						.where(
+							and(
+								eq(teacherPayments.status, "paid"),
+								gte(teacherPayments.paymentDate, parsed.firstDayStr),
+								lte(teacherPayments.paymentDate, parsed.lastDayStr),
+							),
+						),
+					db
+						.select({ total: sum(expenses.amount) })
+						.from(expenses)
+						.where(
+							and(
+								gte(expenses.expenseDate, parsed.firstDayStr),
+								lte(expenses.expenseDate, parsed.lastDayStr),
+							),
+						),
+				]);
+
+			const studentIncome = parseFloat(
+				String(studentIncomeResult[0]?.total ?? 0),
+			);
+			const teacherPaymentsCost = parseFloat(
+				String(teacherPaymentsResult[0]?.total ?? 0),
+			);
+			const operationalExpenses = parseFloat(
+				String(expensesResult[0]?.total ?? 0),
+			);
+			const totalExpenses = teacherPaymentsCost + operationalExpenses;
+			const netProfit = studentIncome - totalExpenses;
+
+			return {
+				month: `${parsed.year}-${String(parsed.month).padStart(2, "0")}`,
+				startDate: parsed.firstDayStr,
+				endDate: parsed.lastDayStr,
+				studentIncome,
+				teacherPaymentsCost,
+				operationalExpenses,
+				totalExpenses,
+				netProfit,
+			};
+		} catch (error) {
+			logger.error("Get monthly financial summary error:", error);
+			throw error;
+		}
+	}
+
 	async getFinancialReport(startDate: Date, endDate: Date) {
 		try {
 			// Convert dates to ISO strings for PostgreSQL
@@ -336,19 +428,12 @@ export class ReportService {
 		}
 	}
 
-	async getDashboardStats() {
+	async getDashboardStats(month?: string) {
 		try {
-			const today = new Date();
-			const firstDayOfMonth = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				1,
-			);
-			const lastDayOfMonth = new Date(
-				today.getFullYear(),
-				today.getMonth() + 1,
-				0,
-			);
+			const resolvedMonth =
+				month ||
+				`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+			const parsedMonth = this.parseMonth(resolvedMonth);
 
 			// Active students
 			const activeStudents = await db
@@ -371,8 +456,8 @@ export class ReportService {
 				.where(
 					and(
 						eq(studentPayments.status, "paid"),
-						gte(studentPayments.paymentDate, firstDayOfMonth),
-						lte(studentPayments.paymentDate, lastDayOfMonth),
+						gte(studentPayments.paymentDate, parsedMonth.firstDayStr),
+						lte(studentPayments.paymentDate, parsedMonth.lastDayStr),
 					),
 				);
 
@@ -392,6 +477,7 @@ export class ReportService {
 				);
 
 			return {
+				month: resolvedMonth,
 				totalActiveStudents: activeStudents[0]?.count || 0,
 				totalActiveTeachers: activeTeachers[0]?.count || 0,
 				monthlyIncome: parseFloat(monthlyIncome[0]?.total || "0"),
