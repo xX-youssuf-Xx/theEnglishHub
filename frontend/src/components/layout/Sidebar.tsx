@@ -7,8 +7,7 @@ import {
 	GraduationCap,
 	LayoutDashboard,
 	LogOut,
-	Logs,
-	Settings,
+	ShieldUser,
 	Users,
 	X,
 } from "lucide-react";
@@ -43,8 +42,7 @@ const navItems: NavItem[] = [
 	{ path: "/teachers", label: "المعلمين", icon: GraduationCap },
 	{ path: "/courses", label: "الكورسات", icon: BookOpen },
 	{ path: "/payments", label: "المدفوعات", icon: CreditCard },
-	{ path: "/users", label: "المستخدمون", icon: Settings },
-	{ path: "/logs", label: "السجلات", icon: Logs },
+	{ path: "/users", label: "المستخدمون", icon: ShieldUser },
 ];
 
 export function Sidebar({
@@ -61,7 +59,6 @@ export function Sidebar({
 		}
 
 		if (item.path === "/users") return hasPermission("view_settings");
-		if (item.path === "/logs") return hasPermission("view_settings");
 		return true;
 	});
 
