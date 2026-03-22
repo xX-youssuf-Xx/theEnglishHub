@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Keep app page named logs
+!src/pages/logs/
+!src/pages/logs/**
+
 node_modules
 dist
 dist-ssr

@@ -55,8 +55,6 @@ export function Sidebar({
 }: SidebarProps) {
 	const { user, logout, hasPermission } = useAuth();
 	const location = useLocation();
-	const [_expandedMenus, _setExpandedMenus] = useState<string[]>([]);
-
 	const filteredNavItems = navItems.filter((item) => {
 		if (user?.role === "assistant") {
 			return item.path === "/students" || item.path === "/payments";
