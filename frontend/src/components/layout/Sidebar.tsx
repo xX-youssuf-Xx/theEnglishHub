@@ -55,7 +55,12 @@ export function Sidebar({
 	const location = useLocation();
 	const filteredNavItems = navItems.filter((item) => {
 		if (user?.role === "assistant") {
-			return item.path === "/students" || item.path === "/payments";
+			return (
+				item.path === "/students" ||
+				item.path === "/payments" ||
+				item.path === "/calendar" ||
+				item.path === "/courses"
+			);
 		}
 
 		if (item.path === "/users") return hasPermission("view_settings");

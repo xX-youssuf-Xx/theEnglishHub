@@ -8,7 +8,7 @@ import {
 	students,
 } from "../db/schema";
 import { classService } from "../services/classes";
-import { adminProcedure, protectedProcedure, router } from "../trpc/context";
+import { protectedProcedure, router } from "../trpc/context";
 
 export const classRouter = router({
 	getAll: protectedProcedure
@@ -129,7 +129,7 @@ export const classRouter = router({
 			return classService.update(input.id, input.data);
 		}),
 
-	delete: adminProcedure
+	delete: protectedProcedure
 		.input(z.string().uuid())
 		.mutation(async ({ input }) => {
 			return classService.delete(input);

@@ -21,7 +21,7 @@ export const courseRouter = router({
 			return courseService.getById(input);
 		}),
 
-	create: adminProcedure
+	create: protectedProcedure
 		.input(
 			z.object({
 				name: z.string().min(3),
@@ -51,7 +51,7 @@ export const courseRouter = router({
 			return result;
 		}),
 
-	update: adminProcedure
+	update: protectedProcedure
 		.input(
 			z.object({
 				id: z.string().uuid(),
@@ -67,7 +67,7 @@ export const courseRouter = router({
 			return courseService.update(input.id, input.data);
 		}),
 
-	delete: adminProcedure
+	delete: protectedProcedure
 		.input(z.string().uuid())
 		.mutation(async ({ input }) => {
 			return courseService.delete(input);
@@ -124,7 +124,7 @@ export const courseRouter = router({
 			};
 		}),
 
-	addLevel: adminProcedure
+	addLevel: protectedProcedure
 		.input(
 			z.object({
 				courseId: z.string().uuid(),
@@ -169,7 +169,7 @@ export const courseRouter = router({
 			return result;
 		}),
 
-	setLevelPrerequisites: adminProcedure
+	setLevelPrerequisites: protectedProcedure
 		.input(
 			z.object({
 				levelId: z.string().uuid(),
@@ -184,7 +184,7 @@ export const courseRouter = router({
 		}),
 
 	// Course prerequisites
-	setCoursePrerequisites: adminProcedure
+	setCoursePrerequisites: protectedProcedure
 		.input(
 			z.object({
 				courseId: z.string().uuid(),
@@ -283,7 +283,7 @@ export const courseRouter = router({
 			};
 		}),
 
-	updateClass: adminProcedure
+	updateClass: protectedProcedure
 		.input(
 			z.object({
 				classId: z.string().uuid(),
@@ -334,7 +334,7 @@ export const courseRouter = router({
 			});
 		}),
 
-	createClass: adminProcedure
+	createClass: protectedProcedure
 		.input(
 			z.object({
 				courseId: z.string().uuid(),
@@ -399,7 +399,7 @@ export const courseRouter = router({
 			});
 		}),
 
-	deleteClass: adminProcedure
+	deleteClass: protectedProcedure
 		.input(z.string().uuid())
 		.mutation(async ({ input }) => {
 			return courseService.deleteClass(input);

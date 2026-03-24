@@ -93,9 +93,7 @@ function AppRoutes() {
 				path="/courses"
 				element={
 					<ProtectedRoute>
-						<AdminRoute>
-							<CoursesPage />
-						</AdminRoute>
+						<CoursesPage />
 					</ProtectedRoute>
 				}
 			/>
@@ -103,9 +101,7 @@ function AppRoutes() {
 				path="/calendar"
 				element={
 					<ProtectedRoute>
-						<AdminRoute>
-							<CalendarPage />
-						</AdminRoute>
+						<CalendarPage />
 					</ProtectedRoute>
 				}
 			/>

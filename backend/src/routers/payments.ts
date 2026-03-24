@@ -132,12 +132,12 @@ export const paymentRouter = router({
 		return paymentService.getPendingStudentPayments();
 	}),
 
-	getPendingTeacherPayments: adminProcedure.query(async () => {
+	getPendingTeacherPayments: protectedProcedure.query(async () => {
 		return paymentService.getPendingTeacherPayments();
 	}),
 
 	// Teacher Payments
-	getTeacherPayments: adminProcedure
+	getTeacherPayments: protectedProcedure
 		.input(
 			z
 				.object({
@@ -175,7 +175,7 @@ export const paymentRouter = router({
 			});
 		}),
 
-	recordTeacherPayment: adminProcedure
+	recordTeacherPayment: protectedProcedure
 		.input(
 			z.object({
 				teacherId: z.string().uuid(),
@@ -357,7 +357,7 @@ export const paymentRouter = router({
 			return result;
 		}),
 
-	settleTeacherPayment: adminProcedure
+	settleTeacherPayment: protectedProcedure
 		.input(
 			z.object({
 				paymentId: z.string().uuid(),
@@ -387,7 +387,7 @@ export const paymentRouter = router({
 		}),
 
 	// Grouped pending payments
-	getPendingPaymentsByTeacher: adminProcedure.query(async () => {
+	getPendingPaymentsByTeacher: protectedProcedure.query(async () => {
 		return paymentService.getPendingPaymentsByTeacher();
 	}),
 
@@ -396,7 +396,7 @@ export const paymentRouter = router({
 	}),
 
 	// Bulk operations
-	bulkSettleTeacherPayments: adminProcedure
+	bulkSettleTeacherPayments: protectedProcedure
 		.input(
 			z.object({
 				teacherId: z.string().uuid(),

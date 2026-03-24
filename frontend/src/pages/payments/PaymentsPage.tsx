@@ -163,10 +163,7 @@ export function PaymentsPage() {
 	// Filter payments based on search and student payment type
 	const allPayments = paymentHistory?.data || [];
 	const filteredPayments = allPayments.filter((payment) => {
-		if (
-			isAssistant &&
-			(payment.type === "teacher" || payment.type === "expense")
-		) {
+		if (isAssistant && payment.type === "expense") {
 			return false;
 		}
 
@@ -237,13 +234,11 @@ export function PaymentsPage() {
 
 			{/* Pending Payments Banners */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				{!isAssistant && (
-					<TeacherPaymentsBanner
-						onRefresh={() => {
-							utils.payments.getPaymentHistory.invalidate();
-						}}
-					/>
-				)}
+				<TeacherPaymentsBanner
+					onRefresh={() => {
+						utils.payments.getPaymentHistory.invalidate();
+					}}
+				/>
 				<StudentPaymentsBanner
 					onRefresh={() => {
 						utils.payments.getPaymentHistory.invalidate();
